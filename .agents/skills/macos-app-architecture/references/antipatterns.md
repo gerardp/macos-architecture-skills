@@ -584,6 +584,130 @@ Full version, with the App-layer side and the compile check, in
 
 ---
 
+## Watching a Directory You Also Write Into
+
+When the file system is the model, a `DirectoryWatcher` in `Services/` is the source of
+truth's change feed. It is also, by default, a feedback loop: the app writes an output
+file into the folder it is watching, the watcher fires, the app reacts, and if reacting
+means writing again, it never stops.
+
+**Measured** with a `DispatchSource` file-system source (`.write`) on a temporary
+directory, macOS 15.7.9:
+
+| Action | Events delivered |
+|---|---|
+| Write **one** file | **2** |
+| Write 100 files in a burst | **200** |
+| The app writing **its own** output file | **2** |
+
+Two facts, both awkward:
+
+1. **One file is not one event.** An atomic write is a temp file plus a rename, so the
+   naive "one event, one reload" mapping is wrong from the first file.
+2. **Bursts do not coalesce.** 100 files produced 200 events, linearly. Dragging a folder
+   in gives you hundreds of reload requests, not one.
+
+**The bad code:**
+
+```swift
+// Reload on every event, and write results back into the same folder.
+watcher.onChange = { [weak self] in
+    Task { await self?.reloadAll() }        // 200 reloads for one drag
+}
+
+func compress(_ url: URL) throws {
+    let out = url.deletingPathExtension().appendingPathExtension("out.png")
+    try data.write(to: out)                 // ← fires the watcher again
+}
+```
+
+**The good code:** debounce the burst, and know your own writes before you make them.
+
+```swift
+actor DirectoryWatcher {
+    private var pendingReload: Task<Void, Never>?
+    private var expectedWrites: Set<URL> = []
+
+    /// Registered *before* writing, so the event that follows is already accounted for.
+    func expect(_ url: URL) { expectedWrites.insert(url) }
+
+    private func handleEvent(at url: URL) {
+        if expectedWrites.remove(url) != nil { return }   // our own output: ignore
+        pendingReload?.cancel()
+        pendingReload = Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            await reload()
+        }
+    }
+}
+```
+
+The debounce window collapses the burst into one reload; the expectation set breaks the
+loop. **Register the expectation before the write, not after** — the event can arrive
+before your `write` call returns.
+
+If the output does not have to live in the watched folder, moving it elsewhere removes
+the problem instead of managing it, and that is the better fix when it is available.
+
+---
+
+## A Callback or Key That Silently Inherits `@MainActor`
+
+Only reachable once the target adopts `.defaultIsolation(MainActor.self)`, and worth
+knowing before you do, because it compiles without a single diagnostic and dies at
+runtime.
+
+```swift
+// Wrong — builds clean, traps the first time the source fires.
+let src = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd,
+                                                    eventMask: .write, queue: q)
+src.setEventHandler { counter.n += 1 }        // inferred @MainActor
+```
+
+**Verified**: no error, no warning, then `Trace/BPT trap: 5` —
+`_dispatch_assert_queue_fail`, because libdispatch checks that the handler is running on
+the source's queue and it is not.
+
+```swift
+// Right — the escape is explicit on both the function and the state it touches.
+nonisolated final class Counter: @unchecked Sendable { var n = 0 }
+
+nonisolated func watch(_ dir: URL) async throws {
+    src.setEventHandler { counter.n += 1 }
+}
+```
+
+Marking only the function converts the trap into a compile error, which is the outcome
+you want.
+
+The same failure has a second shape that is easier to write by accident, because there is
+no closure to notice: **a hand-written `PreferenceKey` or `EnvironmentKey`**. SwiftUI reads
+`defaultValue` on its own schedule and does not promise the main actor.
+
+```swift
+// Wrong — no annotation, so it inherits @MainActor. Compiles silently.
+struct WidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { … }
+}
+
+// Right.
+nonisolated struct WidthKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { … }
+}
+```
+
+**Verified** that the isolation is real: `nonisolated func read() -> CGFloat { WidthKey.defaultValue }`
+fails with `main actor-isolated static property 'defaultValue' can not be referenced from a
+nonisolated context`. `@Entry` generates its own conformance and is unaffected.
+
+Full rationale and the audit list in
+[swift-idioms.md](swift-idioms.md#the-audit-list).
+
+---
+
 ## Assuming iOS Material Applies to macOS
 
 Repeatedly verified: UIKit material doesn’t apply to macOS; SwiftUI
@@ -597,6 +721,9 @@ projects. Before adopting any material, run `grep` for `AppKit`, `NSView`, and
 
 - [MVVM and the Cost of Carrying Old Patterns Forward](https://azamsharp.com/2026/03/04/mvvm-and-cost-of-old-patterns.html)
 - [Building Large-Scale Apps with SwiftUI](https://azamsharp.com/2023/02/28/building-large-scale-apps-swiftui.html)
+- [Zipic 3: Technical Details](https://fatbobman.com/en/posts/zipic-3-technical-details/),
+  Shili — a shipping macOS app's writeup; the source for the watcher feedback loop and
+  the debounce window. Its event counts were re-measured here.
 - [Modular iOS Architecture](https://blog.jacobstechtavern.com/p/modular-ios-architecture),
   Jacob Bartlett — source for the `AnyView` shim as a boundary smell. See
   [modularization.md](modularization.md) for what carried over and what did not.

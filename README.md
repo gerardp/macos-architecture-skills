@@ -53,7 +53,7 @@ npx skills add https://github.com/Dimillian/Skills --skill macos-spm-app-packagi
 
 <pre>
 .agents/skills/macos-app-architecture/
-  <a href=".agents/skills/macos-app-architecture/SKILL.md">SKILL.md</a>                 Entry point. 18 quick rules, the index, and the companion-skill table.
+  <a href=".agents/skills/macos-app-architecture/SKILL.md">SKILL.md</a>                 Entry point. 19 quick rules, the index, and the companion-skill table.
   <a href=".agents/skills/macos-app-architecture/CHANGELOG.md">CHANGELOG.md</a>             Semver policy + what every rule change invalidated.
   references/
     <a href=".agents/skills/macos-app-architecture/references/architecture.md">architecture.md</a>        MV, bounded-context stores, Environment, Screens vs. Views, event enums.
@@ -67,6 +67,7 @@ npx skills add https://github.com/Dimillian/Skills --skill macos-spm-app-packagi
     <a href=".agents/skills/macos-app-architecture/references/error-handling.md">error-handling.md</a>      Error severity, LocalizedError, presentation, typed throws.
     <a href=".agents/skills/macos-app-architecture/references/undo.md">undo.md</a>                UndoManager as a system responsibility, not hand-rolled Memento.
     <a href=".agents/skills/macos-app-architecture/references/previews.md">previews.md</a>            Previews as a design criterion. Narrow inputs, named states.
+    <a href=".agents/skills/macos-app-architecture/references/text-editing.md">text-editing.md</a>        TextKit 2→​1 silent fallback, TextKit 1 vs 2, where the parse lives.
     <a href=".agents/skills/macos-app-architecture/references/testing.md">testing.md</a>             What deserves a test and which kind.
     <a href=".agents/skills/macos-app-architecture/references/project-structure.md">project-structure.md</a>   Flat, feature-based, with Stores/ outside Features/.
     <a href=".agents/skills/macos-app-architecture/references/modularization.md">modularization.md</a>      When one SwiftPM target stops being enough. The cost of a module, measured.
@@ -78,8 +79,7 @@ npx skills add https://github.com/Dimillian/Skills --skill macos-spm-app-packagi
 <a href="CLAUDE.md">CLAUDE.md</a>                  Pointer so Claude Code auto-loads AGENTS.md.
 </pre>
 
-Three documents are planned and not written yet — `appkit-bridge.md`, `text-editing.md` and
-`distribution.md`. The index lists them under *Planned, not written yet*, and nothing links to them.
+Two documents are planned and not written yet — `appkit-bridge.md` and `distribution.md`. The index lists them under *Planned, not written yet*, and nothing links to them.
 
 ## Keeping it current
 

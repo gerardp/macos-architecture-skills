@@ -262,6 +262,129 @@ service protocol you almost certainly have not. Change the requirement to `async
 only the part that decides how the protocols in [architecture.md](architecture.md#dependency-injection-three-mechanisms-one-rule)
 are declared.
 
+## Default Isolation for the Whole Target
+
+Almost everything in a SwiftUI macOS app is main-actor state: the stores, the views, the
+services they call. Writing `@MainActor` on each of them is annotation noise that says
+nothing, because there is nothing it distinguishes from.
+
+Swift 6.2 lets the manifest say it once:
+
+```swift
+// Package.swift — swift-tools-version: 6.2
+.target(name: "MyApp", swiftSettings: [
+    .swiftLanguageMode(.v6),
+    .defaultIsolation(MainActor.self),
+])
+```
+
+Every type, function and closure in the target is now `@MainActor` unless it says
+otherwise, and **`nonisolated` becomes the deliberate mark** — which is the right way
+round, because the code that leaves the main actor is the code worth pointing at.
+
+**Verified** on Swift 6.2.4: the skill's own shapes all compile unchanged under it — an
+`@Observable` store with no annotation, a `Sendable` protocol with `async` requirements,
+and both a `struct` and an `actor` conforming to it. That last part is not luck; it is
+the *async requirement* rule from the previous section doing its job. A synchronous
+requirement plus target-wide main-actor isolation would have made every conformer
+main-actor too.
+
+It also does what it claims — this fails, as it should:
+
+```swift
+nonisolated func leak(_ store: NoteStore) { store.add("y") }
+// error: call to main actor-isolated instance method 'add'
+//        in a synchronous nonisolated context
+```
+
+The cost is that `swift-tools-version` must be **6.2**, which is a floor decision, not a
+formatting one. See [longevity.md](longevity.md).
+
+### The trap it introduces
+
+Callbacks handed to APIs that run them on *their own* queue now inherit `@MainActor` by
+default, and **nothing warns you**. The canonical case is the `DispatchSource` behind a
+directory watcher:
+
+```swift
+// Compiles cleanly. Traps at runtime the first time the source fires.
+let src = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd,
+                                                    eventMask: .write, queue: q)
+src.setEventHandler { counter.n += 1 }        // inferred @MainActor
+```
+
+**Verified**: builds with no error and no warning, then dies with
+`Trace/BPT trap: 5` — `_dispatch_assert_queue_fail` inside libdispatch, because the
+handler is not running on the queue the source was created with.
+
+The fix is to make the escape explicit on *both* sides — the enclosing function and the
+state the handler touches:
+
+```swift
+nonisolated final class Counter: @unchecked Sendable { var n = 0 }
+
+nonisolated func watch(_ dir: URL) async throws {
+    …
+    src.setEventHandler { counter.n += 1 }    // now genuinely nonisolated
+}
+```
+
+Marking only the function turns the runtime trap into a compile error
+(`main actor-isolated property 'n' can not be mutated from a nonisolated context`),
+which is the compiler telling you the shared state is on the wrong side of the
+boundary. That is the diagnostic you want; the silent version above is the one that
+ships.
+
+### The second shape of the same trap
+
+Closures are the obvious case. The subtler one is a **static protocol requirement that
+the framework evaluates on its own schedule** — SwiftUI reads `PreferenceKey.defaultValue`
+and `EnvironmentKey.defaultValue` itself, and does not promise to do it on the main actor.
+
+```swift
+// Compiles with no error and no warning. `defaultValue` is now @MainActor.
+struct WidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+```
+
+**Verified** that the isolation really is applied — this is the proof, and the error you
+will never see unless you go looking for it:
+
+```swift
+nonisolated func read() -> CGFloat { WidthKey.defaultValue }
+// error: main actor-isolated static property 'defaultValue'
+//        can not be referenced from a nonisolated context
+```
+
+Same fix, one word, and it also compiles:
+
+```swift
+nonisolated struct WidthKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { … }
+}
+
+nonisolated struct ThemeKey: EnvironmentKey { static let defaultValue = Theme.system }
+```
+
+`@Entry` generates the conformance for you and is unaffected; this is about
+conformances you write by hand.
+
+### The audit list
+
+**Adopt default isolation, then walk two short lists.**
+
+1. **Closures handed to a queue-based C or Objective-C API** — `DispatchSource`,
+   `FSEvents`, `CGDisplay` callbacks, some `NSNotification` observers.
+2. **Static requirements the framework evaluates itself** — hand-written `PreferenceKey`
+   and `EnvironmentKey` conformances.
+
+Each one is a `nonisolated` away from being correct, and none of them warns.
+
 ## Sources
 
 - [Swift API Design Guidelines](https://www.swift.org/documentation/api-design-guidelines/) — official.
@@ -271,3 +394,10 @@ are declared.
   Christian Tietze — raised the actor-vs-protocol-conformance tension. Its diagnosis
   (that `Sendable` on the protocol makes members `nonisolated`) and its remedy
   (`nonisolated(unsafe)`) are both corrected above, against the compiler.
+- [Letting Swift Closures Automatically Inherit Isolation](https://fatbobman.com/en/posts/letting-swift-closures-automatically-inherit-isolation/),
+  Fatbobman — the source for `.defaultIsolation(MainActor.self)` as a target-level
+  decision. Its `@isolated(any)` / `#isolation` material is language-level and belongs to
+  `swift-concurrency`; the manifest decision and its runtime trap are measured above.
+- [A Deep Dive into SwiftUI Rich Text Layout](https://fatbobman.com/en/posts/a-deep-dive-into-swiftui-rich-text-layout/),
+  LiYanan — source for the `PreferenceKey` half of the trap. Its rich-text architecture is
+  a subject this skill has not written up (see `text-editing.md`, still planned).

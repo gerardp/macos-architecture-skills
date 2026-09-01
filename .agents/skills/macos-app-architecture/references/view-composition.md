@@ -204,6 +204,55 @@ Rule: **one ternary is fine; extract two nested ternaries**. If the condition
 chooses which *view* to show rather than which *value* to use, put `if`/`switch`
 inside the builder, where branches may also have different types.
 
+## Extraction Is a Compile-Time Requirement, Not a Preference
+
+Approach 1 reads as a style argument. It is not always one: past a certain nesting
+depth **the compiler stops being able to type-check `body` at all**, and which
+container you nested decides when that happens.
+
+**Verified** (Swift 6.2.4, macOS 14 target), the same shape each time — a container
+wrapping the previous level plus a `Text`, nested *n* deep in one `body`:
+
+| Nested container | depth 3 | depth 4 | depth 5 |
+|---|---|---|---|
+| `Group` | 0.20 s | 0.95 s | **fails to compile** |
+| `VStack` | 0.13 s | 0.13 s | 0.13 s |
+| `Section` | 0.13 s | 0.13 s | 0.13 s |
+
+At depth 5 `Group` produces:
+
+```
+error: the compiler is unable to type-check this expression in reasonable time;
+       try breaking up the expression into distinct sub-expressions
+```
+
+**The identical structure, split into five named subviews, type-checks in 0.14 s.**
+
+The distinction that matters is not "how deep" but **what kind of container**. A
+`VStack` is a `View` and only a `View`, so there is one initializer to resolve.
+`Group` is generic over content that can be a `View`, `ToolbarContent`, `Commands`,
+`TableColumnContent` and more, each with its own initializer — so every nesting level
+multiplies the overloads the type-checker must consider, and the cost is exponential
+rather than linear.
+
+Two things follow:
+
+1. **`Group` is not free.** Reaching for it to bundle a few views inside another
+   `Group`, inside a `.toolbar`, inside a conditional, is how a `body` that compiled
+   yesterday stops compiling after one more line. If all you need is layout, a stack
+   costs nothing.
+2. **"Break up the expression" means extract a view, not add a variable.** Naming a
+   subview gives the type-checker a fixed, already-resolved type at that boundary,
+   which is why the split version is 40× faster at the depth where the inline one
+   fails outright.
+
+So the rule from Approach 1 has a second justification behind the readability one: a
+`body` short enough to read is also a `body` the compiler can still check. If a view
+suddenly takes seconds to compile, the cause is almost never the code you just wrote —
+it is the depth it was added to.
+
+---
+
 ## When to Use Each Tool
 
 | Situation | Tool |
@@ -216,3 +265,7 @@ inside the builder, where branches may also have different types.
 ## Source
 
 - [SwiftUI Views](https://matteomanferdini.com/swiftui-views/), Matteo Manferdini.
+- [ContentBuilder Explained](https://fatbobman.com/en/posts/contentbuilder-explained/),
+  Fatbobman — explains *why* multi-conformance containers explode the type-checker, and
+  that a future SDK collapses the overloads behind one builder. The numbers in the table
+  above were measured on this toolchain, where that fix does not exist yet.

@@ -3,7 +3,7 @@ name: macos-app-architecture
 description: Architecture and patterns for native macOS apps built with SwiftUI and AppKit—MV vs. MVVM, bounded-context stores, Environment, Screen/View naming, enum-based event grouping, communication between stores, bridging to imperative AppKit views, when to split the app into SwiftPM modules, and running external processes under the App Sandbox. Use when designing a macOS app's structure, deciding where state belongs, creating a store or view, or wrapping an NSView in SwiftUI. Includes anti-patterns with examples of what not to do.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 3.0.0
 ---
 
 # macOS App Architecture (SwiftUI + AppKit)
@@ -37,9 +37,10 @@ To keep this from becoming a dumping ground that duplicates installed skills:
 | [project-structure.md](references/project-structure.md) | Chosen folder structure: flat and feature-based, with `Stores/` outside `Features/` |
 | [modularization.md](references/modularization.md) | One level above folders: when one SwiftPM target stops being enough, the layer ladder, and the measured cost of a module boundary |
 | [previews.md](references/previews.md) | Previews as a design criterion, not a convenience. Narrow inputs, design-time types, named states |
-| [swift-idioms.md](references/swift-idioms.md) | Only what `write-swift` does not cover: SOLID in Swift, one type per file, closure vs protocol, `.task` vs `Task { }`, existentials at the SwiftUI boundary, and how isolation constrains protocol requirements |
+| [text-editing.md](references/text-editing.md) | Text editing on macOS: the silent TextKit 2 → 1 fallback (measured), TextKit 1 vs 2 as a decision, where the parse lives, and AppKit traps with a known cost |
+| [swift-idioms.md](references/swift-idioms.md) | Only what `write-swift` does not cover: SOLID in Swift, one type per file, closure vs protocol, `.task` vs `Task { }`, existentials at the SwiftUI boundary, how isolation constrains protocol requirements, and target-wide default isolation |
 | [ownership.md](references/ownership.md) | Who owns each piece of data: `@State`, `@Binding`, `@Bindable`, `@Environment`, `@AppStorage`, and ownership anti-patterns |
-| [view-composition.md](references/view-composition.md) | Generic `@ViewBuilder`, dedicated views vs. nested stacks, and why not to pass the entire model |
+| [view-composition.md](references/view-composition.md) | Generic `@ViewBuilder`, dedicated views vs. nested stacks, why not to pass the entire model, and the nesting depth at which `body` stops type-checking (measured) |
 | [error-handling.md](references/error-handling.md) | Which errors warrant interruption, `LocalizedError`, presentation on macOS, and why typed throws are almost never appropriate |
 | [longevity.md](references/longevity.md) | Why Apple's soft-deprecation changes what to worry about, why an `NSViewRepresentable` wrapper is a temporary shape, third-party rot, toolchain drift, and containing fragile dependencies |
 | [subprocesses.md](references/subprocesses.md) | Shelling out: what the App Sandbox does and does not allow (measured), why `try` is not the error channel, and what adopting `Subprocess` costs |
@@ -52,7 +53,6 @@ These files do not exist. Do not link to them, and do not cite them as if they h
 | Document | Will cover |
 |---|---|
 | `references/appkit-bridge.md` | Wrapping imperative AppKit views: state ownership, high-frequency events, observer lifecycle |
-| `references/text-editing.md` | TextKit 2 in editing apps: fragment geometry, line↔position mapping, synchronization between views |
 | `references/distribution.md` | Packaging and distribution outside the Mac App Store |
 
 ## Quick Rules
@@ -99,6 +99,9 @@ These files do not exist. Do not link to them, and do not cite them as if they h
     returns normally. Check `terminationStatus`. And shelling out does **not**
     escape the App Sandbox — the child inherits it.
     → [subprocesses](references/subprocesses.md)
+19. **An `NSTextView` starts on TextKit 2 and drops to TextKit 1 the first time
+    anything reads `.layoutManager`** — permanently, silently. Assert which one
+    you are on. → [text editing](references/text-editing.md#1-know-which-textkit-you-are-on--it-is-not-a-given)
 
 ## Companion Skills
 

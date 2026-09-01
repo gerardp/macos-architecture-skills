@@ -28,6 +28,81 @@ a stated consequence becomes silent drift by accident.
 Release procedure: bump `metadata.version` in `SKILL.md` and add the entry here **in the same commit
 as the rule change**, then tag `v<version>`.
 
+## 3.0.0 — 2026-09-01
+
+**MAJOR: a new Quick Rule and two new anti-patterns. Existing code can violate all three.**
+
+1. **Quick Rule 19 — know which TextKit you are on.** New document:
+   [text-editing.md](references/text-editing.md), which fills the `text-editing.md` slot
+   that had been listed as planned since 1.0.0. **Measured**, one fresh `NSTextView` per
+   probe: a view starts on **TextKit 2**, and reading `.layoutManager` **once** drops it to
+   **TextKit 1** — permanently, with no warning and no way back. Reading `.textStorage` or
+   `.textContainer` is safe. *Comply*: assert `textView.textLayoutManager != nil` in the
+   view's setup, and reach for `textLayoutManager` / `textContentStorage` rather than
+   `layoutManager`. Any editor that believes it is on TextKit 2 without asserting it may
+   simply not be.
+
+   The document also records the TextKit 1-vs-2 decision with four shipping apps landing on
+   both sides and the concrete reason (viewport height estimation destabilises the
+   scroller; Apple's response is that this is as-designed), the two-tier attribute
+   architecture that keeps the parse out of the styling, four AppKit traps with a known
+   cost, and — deliberately — **two widely repeated claims that did not reproduce** on this
+   OS: re-applying attributes did *not* move the insertion point, and a plain-text
+   `NSTextView` *does* advertise `NSStringPboardType`.
+
+2. **[Watching a directory you also write into](references/antipatterns.md#watching-a-directory-you-also-write-into).**
+   When the file system is the model, a `DirectoryWatcher` that reloads on every event, in
+   an app that writes output into the folder it watches, is a feedback loop. Measured with
+   a `DispatchSource` `.write` source: **one** file written delivers **2** events (an
+   atomic write is a temp file plus a rename), 100 files in a burst deliver **200** — no
+   coalescing — and the app's own output file delivers 2 more. *Comply*: debounce the burst
+   into one reload, and register an expected write **before** performing it so the event it
+   produces is ignored. Where the output need not live in the watched folder, moving it
+   removes the problem instead of managing it.
+
+3. **[A callback or key that silently inherits `@MainActor`](references/antipatterns.md#a-callback-or-key-that-silently-inherits-mainactor).**
+   Reachable only in a target using `.defaultIsolation(MainActor.self)`, which is why it
+   lands in the same release as that option. A `DispatchSource` event handler compiles with
+   **no error and no warning**, then dies with `Trace/BPT trap: 5`
+   (`_dispatch_assert_queue_fail`) the first time it fires. *Comply*: mark both the
+   enclosing function and the state the handler touches `nonisolated` — marking only the
+   function usefully converts the runtime trap into a compile error. The same failure has a
+   second shape with no closure to notice: a hand-written `PreferenceKey` or
+   `EnvironmentKey`, whose `defaultValue` SwiftUI reads on its own schedule. Verified that
+   both pick up the isolation silently, and that `nonisolated` on the type fixes both.
+   `@Entry` generates its own conformance and is unaffected.
+
+### Additional verified guidance
+
+No rule changed in this subsection.
+
+- **[view-composition.md](references/view-composition.md#extraction-is-a-compile-time-requirement-not-a-preference) —
+  extraction is a compile-time requirement, not a preference.** Measured: the same shape
+  nested five deep type-checks in 0.13 s with `VStack` or `Section` and **fails to compile
+  outright** with `Group` (`error: the compiler is unable to type-check this expression in
+  reasonable time`), after 0.20 s at depth 3 and 0.95 s at depth 4. The identical depth-5
+  structure split into five named subviews: **0.14 s**. The variable is not depth but the
+  container's conformance count — `Group` is generic over `View`, `ToolbarContent`,
+  `Commands` and more, so every level multiplies the initializers to resolve. The
+  readability rule in that document now has a compile-correctness justification behind it.
+
+- **[swift-idioms.md](references/swift-idioms.md#default-isolation-for-the-whole-target) —
+  target-wide default isolation.** `.defaultIsolation(MainActor.self)` in the manifest makes
+  `@MainActor` the default and `nonisolated` the deliberate mark, which is the right way
+  round for a SwiftUI app where nearly everything is main-actor state. Verified that every
+  shape this skill prescribes compiles under it unchanged — including a `Sendable` protocol
+  satisfied by both a `struct` and an `actor`, which holds only because 2.0.0's
+  async-requirement rule is being followed. Costs a `swift-tools-version: 6.2` floor, and
+  brings anti-pattern 2 above with it.
+
+- **[longevity.md §3](references/longevity.md#a-concurrency-diagnostic-that-changed-is-usually-the-sdk-not-the-compiler) —
+  a concurrency diagnostic that changed is usually the SDK, not the compiler.**
+  `NS_SWIFT_SENDABLE` and `NS_SWIFT_NONISOLATED` in Objective-C headers rewrite how a type
+  enters Swift, with no compiler change involved. Verified: `NSManagedObjectContext.h` in
+  this SDK carries both on its interface line, and 11 AppKit headers carry the first, 7 the
+  second. The document now carries the `grep` to run before assuming the compiler changed,
+  and the warning that a newly *permitted* thing is not a newly *safe* one.
+
 ## 2.0.0 — 2026-09-01
 
 **MAJOR: five new Quick Rules covering module boundaries, observation outside a view,

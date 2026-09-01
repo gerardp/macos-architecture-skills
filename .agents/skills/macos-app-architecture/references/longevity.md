@@ -108,6 +108,58 @@ compiler path in a verbose build is.
 
 ---
 
+### A concurrency diagnostic that changed is usually the SDK, not the compiler
+
+A specific case of toolchain drift, and the one that wastes the most time because the
+instinct is wrong. When code that failed strict-concurrency checking last Xcode compiles
+in this one — or the reverse — **the compiler is rarely what changed**. Apple annotates
+Objective-C headers over time, and two macros silently rewrite how a framework type
+enters Swift:
+
+| Macro | Effect on the Swift import |
+|---|---|
+| `NS_SWIFT_SENDABLE` | The type comes in as `Sendable`, so it may cross isolation domains |
+| `NS_SWIFT_NONISOLATED` | Members import as callable from outside any isolation context |
+
+**Verified** in the SDK this repository builds against — `NSManagedObjectContext.h`
+carries both, on the interface line itself:
+
+```
+NS_SWIFT_NONISOLATED NS_SWIFT_SENDABLE
+@interface NSManagedObjectContext : NSObject <NSCoding, NSLocking>
+```
+
+An SDK a version or two older carries neither, and the same code is rejected there. Same
+compiler, same language mode, different answer.
+
+**So check the header before you believe the compiler changed:**
+
+```bash
+SDK=$(xcrun --show-sdk-path)
+grep -n "NS_SWIFT_SENDABLE\|NS_SWIFT_NONISOLATED" \
+  "$SDK/System/Library/Frameworks/AppKit.framework/Headers/NSDocument.h"
+
+# Or the definitive Swift-facing view:
+ls "$SDK/System/Library/Frameworks/CoreData.framework/Modules/CoreData.swiftmodule/"
+# → arm64e-apple-macos.swiftinterface, which shows the imported signatures
+```
+
+In this SDK, 11 AppKit headers carry `NS_SWIFT_SENDABLE` and 7 carry
+`NS_SWIFT_NONISOLATED`. That number grows with each release, which is precisely the
+drift: **an annotation you do not control decides whether your bridging code compiles.**
+
+Two consequences worth holding:
+
+- **A newly permitted thing is not a newly safe thing.** `NS_SWIFT_SENDABLE` is Apple
+  asserting thread-safety to the type checker. It does not validate your usage, and the
+  framework's own concurrency rules — Core Data's queue confinement, AppKit's main-thread
+  requirement — still apply. Compiling is not permission.
+- **Do not "fix" an error by widening isolation** until you have read the header. The
+  error may be the annotation's absence in *your* SDK rather than a defect in your design,
+  and it may disappear on its own next release.
+
+---
+
 ## 4. Risk three: dependencies you cannot isolate
 
 The mitigation for a fragile dependency is not avoidance — sometimes it is the
@@ -167,8 +219,12 @@ The project's own risk register belongs with the project, not here.
 
 ---
 
-## Source
+## Sources
 
+- [Sendable NSManagedObjectContext](https://fatbobman.com/en/posts/sendable-nsmanagedobjectcontext/),
+  Fatbobman — traced a concurrency behaviour change to two SDK macros rather than to the
+  compiler. Its Core Data specifics are out of scope for this skill; the diagnostic
+  technique in §3 is not, and was re-verified against this SDK.
 - [The SwiftUI WebView](https://troz.net/post/2025/swiftui-webview/), Sarah Reichelt —
   the walkthrough of `WebView`/`WebPage` that prompted §1's corollary. Its API surface is
   reference material and stays out of this skill; the availability floor above was
