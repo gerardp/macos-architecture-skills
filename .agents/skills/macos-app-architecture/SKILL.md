@@ -1,6 +1,9 @@
 ---
 name: macos-app-architecture
 description: Architecture and patterns for native macOS apps built with SwiftUI and AppKit—MV vs. MVVM, bounded-context stores, Environment, Screen/View naming, enum-based event grouping, communication between stores, and bridging to imperative AppKit views. Use when designing a macOS app's structure, deciding where state belongs, creating a store or view, or wrapping an NSView in SwiftUI. Includes anti-patterns with examples of what not to do.
+license: MIT
+metadata:
+  version: 1.0.0
 ---
 
 # macOS App Architecture (SwiftUI + AppKit)

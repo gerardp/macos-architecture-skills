@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Xcode / SwiftPM
+.build/
+.swiftpm/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# Agent tooling
+# Local, machine-specific agent settings only. Nothing else under .claude/ or .agents/
+# is ignored — the skill in .agents/skills/ is the product of this repository.
+.claude/settings.local.json
