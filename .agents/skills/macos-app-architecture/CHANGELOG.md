@@ -28,6 +28,183 @@ a stated consequence becomes silent drift by accident.
 Release procedure: bump `metadata.version` in `SKILL.md` and add the entry here **in the same commit
 as the rule change**, then tag `v<version>`.
 
+## 2.0.0 — 2026-09-01
+
+**MAJOR: five new Quick Rules covering module boundaries, observation outside a view,
+and external processes. Existing code can violate all five.**
+
+### Additional verified guidance
+
+No rule changed in this subsection. It adds three findings, one of which corrects the
+baseline modularization guidance introduced in this release.
+
+- **[swift-idioms.md](references/swift-idioms.md) — *Isolation and Protocol Requirements*.**
+  How you declare a service protocol decides whether an `actor` or a `@MainActor` type can
+  ever conform to it. Six conformance shapes compiled under `-swift-version 6`: with
+  **`async` requirements** a `Sendable` protocol is satisfiable by a struct, an actor and a
+  main-actor class alike — which is why this skill's repositories are shaped that way, and
+  why nothing existing needs changing. A **synchronous** requirement is not, and the
+  widespread explanation for that (`Sendable` on the protocol makes members `nonisolated`)
+  is wrong: a protocol with no `Sendable` at all is rejected with the same diagnostic. What
+  `Sendable` really does is **forbid the isolated-conformance escape hatch** (`: @MainActor P`,
+  Swift 6.2), so marking a protocol `Sendable` out of habit removes an option. The
+  `nonisolated(unsafe)` remedy that circulates is recorded as what it is — removing the
+  actor's protection from a stored property, not fixing the design.
+
+- **[modularization.md §7](references/modularization.md#7-tooling) — the linkage exception.**
+  The baseline says static-vs-dynamic linkage is "a separate axis … decide it after the graph".
+  That is right for a single app target and wrong as soon as the product holds a **second
+  binary** — an extension, an XPC service, a helper. Measured: SwiftPM links statically by
+  default and emits one `<Package>_<Module>.bundle` per resource-bearing module, so each
+  extra binary gets its own copy of the code *and* of every resource bundle. A `.dynamic`
+  aggregating product fixes the code half only — verified, the bundles are still emitted
+  beside `libFooBar.dylib`, not inside it, and have to be relocated by a build step. The
+  guidance now reads: count the binaries before choosing linkage.
+
+- **[longevity.md §1](references/longevity.md) — an `NSViewRepresentable` wrapper is a
+  temporary shape.** The corollary of soft-deprecation: the wrappers written to fill a
+  SwiftUI gap are the code most likely to gain a **native successor**, and nothing warns
+  you when it lands. Two verified against the SDK, both at macOS 26 — SwiftUI `WebView` /
+  `WebPage` for a wrapped `WKWebView`, and `Observations` for a hand-rolled re-arming
+  observer. Neither is reachable at this skill's macOS 14 floor, so the conclusion is about
+  *shape*: keep the wrapper deletable, one file, with the app depending on your view rather
+  than on `WKWebView`.
+
+### External processes
+
+One new Quick Rule covers external processes. Existing code that shells out can violate it.
+
+New document: [subprocesses.md](references/subprocesses.md) — the App Sandbox rules for
+spawning, why `try` is not the error channel, what task cancellation does to a child, and
+what adopting the `Subprocess` package costs.
+
+**What it invalidates, and how to comply:**
+
+**Quick Rule 18 — a subprocess's exit status is not an error.** Code shaped
+`let r = try await run(…)` followed by `parse(r.standardOutput)` is now non-compliant.
+Measured against `Subprocess` 1.0.0: a command that exits non-zero returns **normally**,
+carrying whatever partial output it managed to write, and so does a child killed by task
+cancellation (`terminationStatus == .signaled(9)`, ~30 ms after `cancel()`, no
+`CancellationError`). `run` throws only when the executable cannot be launched.
+*Comply*: `guard result.terminationStatus.isSuccess else { … }` before touching the
+output, and treat the failure at the severity
+[error-handling.md](references/error-handling.md) prescribes — usually informational,
+carrying stderr.
+
+The rule's second half — **shelling out does not escape the App Sandbox** — invalidates a
+design rather than a line of code. Measured on an ad-hoc-signed sandboxed `.app`: spawning
+a system executable **works** with no entitlement, the child **inherits** the app's
+sandbox, and the app's file-access grants **do** extend to the child. So an app that runs
+a tool over user-chosen paths ships sandboxed, and one that must roam the disk is a
+direct-distribution app — a decision that belongs before the feature, not after it.
+`HOME` inside the sandbox is the container, which is the usual reason a command behaves
+differently in a release build than under Xcode.
+
+**Also recorded, invalidating nothing:**
+
+- **`SIGKILL` sharpens [Quick Rule 11](SKILL.md).** `.task` is the right home for a
+  subprocess whose result stops mattering when the view goes away, and the wrong home for
+  one that must finish: the child is killed outright and cannot flush or unlock.
+- **The terms of adopting `Subprocess`**, read from the 1.0.0 tag and verified by building
+  against it: `swift-tools-version: 6.2`, `.macOS(.v13)` with an `.iOS("99.0")` sentinel
+  that makes it **macOS-only**, a transitive `swift-system` dependency, and a stated
+  policy that *any minor release may raise the required Swift toolchain*. It is past 1.0,
+  so [longevity.md](references/longevity.md)'s pre-1.0 warning no longer applies, but its
+  containment rule does — one type imports it.
+
+Two other articles were reviewed for this release and **nothing was taken from them**:
+a defence of SwiftUI with no code or measurements, and a 2023 data-flow guide whose
+content is already in [ownership.md](references/ownership.md) and
+[architecture.md](references/architecture.md) (including the `@Bindable var x = env`
+mechanic) and whose decision flowchart is the API reference the admission rule excludes.
+
+### Observation outside a view
+
+One new Quick Rule covers reacting to a store from outside a `body`, and corrects a
+widely shared technique that does not build under Swift 6.
+
+[observation.md](references/observation.md) gains two sections, both measured against
+Swift 6.2.4 / macOS 15.7.9.
+
+**What it invalidates, and how to comply:**
+
+- **Quick Rule 17 — to react to a store from outside a `body`, publish domain events.**
+  Code that reaches into a store's properties from a coordinator, a window controller or
+  a service using a re-arming `withObservationTracking` helper is now non-compliant when
+  the store is yours to change. *Comply*: give the store an `AsyncStream` of domain
+  events, per [architecture.md](references/architecture.md#communicating-between-stores).
+  The property bridge stays legitimate in two cases the rule names — a type you do not
+  own, and "current value now" semantics — and
+  [observation.md §5](references/observation.md#5-observing-a-store-from-outside-a-view)
+  now carries a version of it that compiles: main-actor-isolated, cancelling itself
+  through `.terminated`, verified warning-free under `.swiftLanguageMode(.v6)`.
+
+  The wrapper that circulates for this — `@Sendable @escaping @autoclosure` over the
+  property — **does not compile in Swift 6 language mode** at all. A non-`Sendable` store
+  fails the capture; making it `@MainActor` fixes that and then fails on reading isolated
+  state from a `@Sendable` closure. Both errors are recorded verbatim. If yours builds,
+  the package is still in Swift 5 mode, where the check does not run at all — verified,
+  the same code builds there with no diagnostic. That makes the wrapper a silent Swift 6
+  migration blocker, which is why this is a rule and not a note.
+
+**New facts, invalidating nothing on their own:**
+
+- **[§4](references/observation.md#4-assigning-an-equal-value-does-not-notify) — `@Observable`
+  deduplicates equal assignments.** Measured across seven cases: it stays silent when the
+  new value compares equal or is the same object, and notifies when it cannot compare
+  (a non-`Equatable` payload notifies on every assignment). Two practical corollaries —
+  hand-written `guard newValue != value` guards in a store are redundant, and model types
+  should be `Equatable` so the deduplication can apply.
+- **§5 measures what the property bridge actually delivers**: three synchronous mutations
+  produce one callback carrying the final value, the current value is not delivered on
+  subscribe, and the stream ends on the first change after the consumer is cancelled. It
+  is a "something changed" signal, not an event log — which is the reason Rule 17 points
+  at domain events first.
+- **`Observations`, the native `AsyncSequence` replacement, requires macOS 26** — verified,
+  so it is not an option at this skill's deployment floor. §5 says what to delete when the
+  floor moves.
+
+### Module boundaries
+
+Three new Quick Rules cover module boundaries. Existing multi-target code can violate all
+three.
+
+New document: [modularization.md](references/modularization.md) — when one SwiftPM target
+stops being enough, the App → Features → Workflows → Services → Core ladder, how to cross a
+feature boundary on macOS, and how to migrate an existing app leaves-first.
+
+**What it invalidates, and how to comply:**
+
+1. **Quick Rule 14 — one target until a named pressure justifies a second.** A codebase
+   split into modules for tidiness rather than for a build wait, an encapsulation need, or
+   colliding owners is now non-compliant. *Comply*: either name the pressure the split
+   answers, or collapse the targets back into folders. Nothing needs to change in a
+   single-target app.
+2. **Quick Rule 15 — a module's declaration set is its build contract.** Previously
+   unstated, so nothing was written against it, but the measurement in §2 of the new
+   document invalidates the common belief that only `public` matters: adding an `internal`
+   declaration recompiles every file of every dependent module. *Comply*: a `Core` module
+   that gains declarations weekly is not buying build time; treat its declaration churn as
+   the metric, not its `public` surface.
+3. **Quick Rule 16 — a feature module never imports a sibling feature.** Code that reaches
+   a sibling's screens through a shared `AnyView` factory protocol is now an anti-pattern.
+   *Comply*: replace it with a route enum in a leaf module plus route → screen mapping in
+   the App layer, per
+   [modularization.md §4](references/modularization.md#4-crossing-a-feature-boundary-on-macos).
+
+Also in this release, invalidating nothing on their own:
+
+- [antipatterns.md](references/antipatterns.md) gains *Splitting Into Modules Before There
+  Is a Build to Save* and *The `AnyView` Shim Across a Feature Boundary*, with wrong/right
+  code.
+- [project-structure.md](references/project-structure.md) now states that its structure is
+  a **single** target and points to the new document for the multi-target decision.
+
+The recompilation table in §2 is measured on Swift 6.2.4 / macOS 15.7.9 with SwiftPM, not
+taken from the source article, and the document carries the command to reproduce it. The
+SwiftUI examples on both sides of §4 compile as separate targets against a macOS 14
+deployment target.
+
 ## 1.0.0 — 2026-09-01
 
 First packaged release. The skill moved from the repository root to

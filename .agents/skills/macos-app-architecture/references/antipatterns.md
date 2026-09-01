@@ -520,6 +520,70 @@ source of truth—and only after measurements show that it is needed.
 
 ---
 
+## Splitting Into Modules Before There Is a Build to Save
+
+A module is a compilation contract and a permanent dependency edge; a folder is
+neither. Cutting an app into targets for tidiness pays the manifest, the
+access-level pass and the import bookkeeping, and buys nothing measurable — and
+module boundaries are far more expensive to move later than folders are.
+
+Three things justify the cut: a build wait you can point at, encapsulation that
+`internal` cannot give you inside one target, or two owners colliding on the
+same files. None of the three ⇒ one target.
+
+Verified in [modularization.md](modularization.md#2-what-a-module-boundary-actually-buys--measured):
+adding a single declaration to a module — **including an `internal` one** —
+recompiles *every* file of *every* module that depends on it. A `Core` module
+that keeps growing declarations makes builds worse than the monolith it replaced.
+
+---
+
+## The `AnyView` Shim Across a Feature Boundary
+
+The symptom that a module boundary is drawn in the wrong place: feature A needs
+to show a screen owned by feature B, so a protocol is invented in a shared leaf
+module to hand the view back type-erased.
+
+**The bad code:**
+
+```swift
+// Contracts (leaf module)
+public protocol NoteScreenProviding {
+    func noteScreen(id: UUID) -> AnyView
+}
+
+extension EnvironmentValues {
+    @Entry public var noteScreens: any NoteScreenProviding = MissingNoteScreens()
+}
+```
+
+`AnyView` erases the identity SwiftUI diffs on, the default conformance renders
+nothing when someone forgets to inject the real one, and the boundary is being
+worked around instead of moved. This is **not** the framework-forced existential
+that [swift-idioms.md](swift-idioms.md#existentials-at-the-framework-boundary)
+accepts: there the API leaves no choice, here the architecture does.
+
+**The good code:** the feature emits a route, and the App layer — the only place
+that knows both features exist — maps it to a screen. No feature names another
+feature's screen, and on macOS "presenting" is a selection anyway.
+
+```swift
+// AppRoutes (leaf module)
+public enum AppRoute: Hashable, Codable, Sendable { case note(UUID), tag(String) }
+
+extension EnvironmentValues {
+    @Entry public var navigate: (AppRoute) -> Void = { _ in }
+}
+
+// SearchFeature — imports AppRoutes and nothing else of ours
+Button(id.uuidString) { navigate(.note(id)) }
+```
+
+Full version, with the App-layer side and the compile check, in
+[modularization.md](modularization.md#4-crossing-a-feature-boundary-on-macos).
+
+---
+
 ## Assuming iOS Material Applies to macOS
 
 Repeatedly verified: UIKit material doesn’t apply to macOS; SwiftUI
@@ -533,6 +597,9 @@ projects. Before adopting any material, run `grep` for `AppKit`, `NSView`, and
 
 - [MVVM and the Cost of Carrying Old Patterns Forward](https://azamsharp.com/2026/03/04/mvvm-and-cost-of-old-patterns.html)
 - [Building Large-Scale Apps with SwiftUI](https://azamsharp.com/2023/02/28/building-large-scale-apps-swiftui.html)
+- [Modular iOS Architecture](https://blog.jacobstechtavern.com/p/modular-ios-architecture),
+  Jacob Bartlett — source for the `AnyView` shim as a boundary smell. See
+  [modularization.md](modularization.md) for what carried over and what did not.
 - [SwiftUI in 2025: Forget MVVM](https://dimillian.medium.com/swiftui-in-2025-forget-mvvm-262ff2bbd2ed),
   Thomas Ricouard — the same conclusion reached from production apps (IcySky,
   the Medium iOS app) rather than from first principles. Agrees on everything

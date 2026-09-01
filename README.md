@@ -53,14 +53,14 @@ npx skills add https://github.com/Dimillian/Skills --skill macos-spm-app-packagi
 
 <pre>
 .agents/skills/macos-app-architecture/
-  <a href=".agents/skills/macos-app-architecture/SKILL.md">SKILL.md</a>                 Entry point. 13 quick rules, the index, and the companion-skill table.
+  <a href=".agents/skills/macos-app-architecture/SKILL.md">SKILL.md</a>                 Entry point. 18 quick rules, the index, and the companion-skill table.
   <a href=".agents/skills/macos-app-architecture/CHANGELOG.md">CHANGELOG.md</a>             Semver policy + what every rule change invalidated.
   references/
     <a href=".agents/skills/macos-app-architecture/references/architecture.md">architecture.md</a>        MV, bounded-context stores, Environment, Screens vs. Views, event enums.
     <a href=".agents/skills/macos-app-architecture/references/antipatterns.md">antipatterns.md</a>        What not to do, wrong and right code side by side.  ← start here
     <a href=".agents/skills/macos-app-architecture/references/overrides.md">overrides.md</a>           Where this skill overrides a companion skill, with the citation.
     <a href=".agents/skills/macos-app-architecture/references/ownership.md">ownership.md</a>           Who owns each piece of data: State, Binding, Bindable, Environment.
-    <a href=".agents/skills/macos-app-architecture/references/observation.md">observation.md</a>         @Observable granularity (measured), lifecycle, event enums.
+    <a href=".agents/skills/macos-app-architecture/references/observation.md">observation.md</a>         @Observable granularity, equal-value dedup, observing outside a view.
     <a href=".agents/skills/macos-app-architecture/references/view-composition.md">view-composition.md</a>    Generic @ViewBuilder, dedicated views, not passing the whole model.
     <a href=".agents/skills/macos-app-architecture/references/navigation.md">navigation.md</a>          Selection vs. stack, what does not carry over from iOS, windows.
     <a href=".agents/skills/macos-app-architecture/references/validation.md">validation.md</a>          Five form-validation patterns, least to most machinery.
@@ -69,8 +69,10 @@ npx skills add https://github.com/Dimillian/Skills --skill macos-spm-app-packagi
     <a href=".agents/skills/macos-app-architecture/references/previews.md">previews.md</a>            Previews as a design criterion. Narrow inputs, named states.
     <a href=".agents/skills/macos-app-architecture/references/testing.md">testing.md</a>             What deserves a test and which kind.
     <a href=".agents/skills/macos-app-architecture/references/project-structure.md">project-structure.md</a>   Flat, feature-based, with Stores/ outside Features/.
+    <a href=".agents/skills/macos-app-architecture/references/modularization.md">modularization.md</a>      When one SwiftPM target stops being enough. The cost of a module, measured.
     <a href=".agents/skills/macos-app-architecture/references/swift-idioms.md">swift-idioms.md</a>        Only what write-swift does not cover.
     <a href=".agents/skills/macos-app-architecture/references/longevity.md">longevity.md</a>           Soft-deprecation, third-party rot, toolchain drift.
+    <a href=".agents/skills/macos-app-architecture/references/subprocesses.md">subprocesses.md</a>        Shelling out: the App Sandbox (measured), exit status, Subprocess cost.
 
 <a href="AGENTS.md">AGENTS.md</a>                  How to work on this repository. For tools that read AGENTS.md.
 <a href="CLAUDE.md">CLAUDE.md</a>                  Pointer so Claude Code auto-loads AGENTS.md.

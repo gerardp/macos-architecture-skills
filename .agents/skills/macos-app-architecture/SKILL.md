@@ -1,9 +1,9 @@
 ---
 name: macos-app-architecture
-description: Architecture and patterns for native macOS apps built with SwiftUI and AppKit—MV vs. MVVM, bounded-context stores, Environment, Screen/View naming, enum-based event grouping, communication between stores, and bridging to imperative AppKit views. Use when designing a macOS app's structure, deciding where state belongs, creating a store or view, or wrapping an NSView in SwiftUI. Includes anti-patterns with examples of what not to do.
+description: Architecture and patterns for native macOS apps built with SwiftUI and AppKit—MV vs. MVVM, bounded-context stores, Environment, Screen/View naming, enum-based event grouping, communication between stores, bridging to imperative AppKit views, when to split the app into SwiftPM modules, and running external processes under the App Sandbox. Use when designing a macOS app's structure, deciding where state belongs, creating a store or view, or wrapping an NSView in SwiftUI. Includes anti-patterns with examples of what not to do.
 license: MIT
 metadata:
-  version: 1.0.0
+  version: 2.0.0
 ---
 
 # macOS App Architecture (SwiftUI + AppKit)
@@ -33,14 +33,16 @@ To keep this from becoming a dumping ground that duplicates installed skills:
 | [navigation.md](references/navigation.md) | Navigation on macOS: selection vs. stack, what does not carry over from iOS, windows |
 | [validation.md](references/validation.md) | Five form-validation patterns, from the least to the most machinery |
 | [testing.md](references/testing.md) | What deserves a test and which kind. The API is covered by `swift-testing-expert` |
-| [observation.md](references/observation.md) | `@Observable` granularity (measured), lifecycle, and where an event enum fits |
+| [observation.md](references/observation.md) | `@Observable` granularity (measured), lifecycle, where an event enum fits, equal-value deduplication, and observing a store from outside a view |
 | [project-structure.md](references/project-structure.md) | Chosen folder structure: flat and feature-based, with `Stores/` outside `Features/` |
+| [modularization.md](references/modularization.md) | One level above folders: when one SwiftPM target stops being enough, the layer ladder, and the measured cost of a module boundary |
 | [previews.md](references/previews.md) | Previews as a design criterion, not a convenience. Narrow inputs, design-time types, named states |
-| [swift-idioms.md](references/swift-idioms.md) | Only what `write-swift` does not cover: SOLID in Swift, one type per file, closure vs protocol, `.task` vs `Task { }`, and existentials at the SwiftUI boundary |
+| [swift-idioms.md](references/swift-idioms.md) | Only what `write-swift` does not cover: SOLID in Swift, one type per file, closure vs protocol, `.task` vs `Task { }`, existentials at the SwiftUI boundary, and how isolation constrains protocol requirements |
 | [ownership.md](references/ownership.md) | Who owns each piece of data: `@State`, `@Binding`, `@Bindable`, `@Environment`, `@AppStorage`, and ownership anti-patterns |
 | [view-composition.md](references/view-composition.md) | Generic `@ViewBuilder`, dedicated views vs. nested stacks, and why not to pass the entire model |
 | [error-handling.md](references/error-handling.md) | Which errors warrant interruption, `LocalizedError`, presentation on macOS, and why typed throws are almost never appropriate |
-| [longevity.md](references/longevity.md) | Why Apple's soft-deprecation changes what to worry about, third-party rot, toolchain drift, and containing fragile dependencies |
+| [longevity.md](references/longevity.md) | Why Apple's soft-deprecation changes what to worry about, why an `NSViewRepresentable` wrapper is a temporary shape, third-party rot, toolchain drift, and containing fragile dependencies |
+| [subprocesses.md](references/subprocesses.md) | Shelling out: what the App Sandbox does and does not allow (measured), why `try` is not the error channel, and what adopting `Subprocess` costs |
 | [undo.md](references/undo.md) | `UndoManager` as a system responsibility, and why not to implement Memento by hand on macOS |
 
 ### Planned, not written yet
@@ -79,6 +81,24 @@ These files do not exist. Do not link to them, and do not cite them as if they h
     not the version you use. → [longevity](references/longevity.md)
 13. **Before handling an error, decide its severity**: ignorable,
     informational, blocking, or fatal. → [error handling](references/error-handling.md)
+14. **One SwiftPM target until a named pressure justifies a second**: a build
+    wait, encapsulation `internal` cannot give, or two owners colliding. Folders
+    first. → [modularization](references/modularization.md)
+15. **A module's declaration set is its build contract.** Adding any declaration
+    — `internal` included — recompiles every file of every dependent module.
+    Bodies are free. → [modularization](references/modularization.md#2-what-a-module-boundary-actually-buys--measured)
+16. **A feature module never imports a sibling feature.** It emits a route; the
+    App layer maps routes to screens. → [modularization](references/modularization.md#4-crossing-a-feature-boundary-on-macos)
+17. **To react to a store from outside a `body`, publish domain events.**
+    `withObservationTracking` is one-shot, and the re-arming wrapper that
+    circulates does not compile in Swift 6 language mode. If you must observe a
+    property, use the main-actor-isolated `AsyncStream` bridge — and know that it
+    coalesces. → [observation](references/observation.md#5-observing-a-store-from-outside-a-view)
+18. **A subprocess's exit status is not an error.** `try` catches only a failure
+    to launch: a command that exits non-zero, or a child killed by cancellation,
+    returns normally. Check `terminationStatus`. And shelling out does **not**
+    escape the App Sandbox — the child inherits it.
+    → [subprocesses](references/subprocesses.md)
 
 ## Companion Skills
 

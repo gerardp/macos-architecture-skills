@@ -34,6 +34,30 @@ years after their replacements shipped.
 - **Do not treat compiler silence as approval.** The absence of a warning is
   deliberate on Apple's part, not evidence the API is current.
 
+### The corollary: an `NSViewRepresentable` wrapper is a temporary shape
+
+Soft-deprecation cuts the other way too. The wrappers you write because SwiftUI
+lacks something are the code most likely to acquire a **native successor** — and
+unlike a deprecation, nothing warns you when that happens. Two verified against
+this SDK, both landing at macOS 26:
+
+| What you wrap today | Native successor | Available from |
+|---|---|---|
+| `WKWebView` in an `NSViewRepresentable` | SwiftUI `WebView` + `@Observable` `WebPage` | `error: 'WebView' is only available in macOS 26.0 or newer` |
+| A hand-rolled re-arming `withObservationTracking` | `Observations` | `error: 'Observations' is only available in macOS 26.0 or newer` |
+
+This does not mean writing the wrapper was wrong; at a macOS 14 floor there was
+no alternative. It means **the wrapper should be shaped so it can be deleted**:
+one file, its own type, the rest of the app depending on your view rather than
+on `WKWebView`. That is the same containment described in §4 for a fragile
+package, applied to a fragile *design* — and a `WebPage` that is `@Observable`
+and exposes navigation as an `AsyncSequence` slots into
+[observation.md](observation.md#5-observing-a-store-from-outside-a-view)'s
+consumption pattern with the call sites unchanged.
+
+Raising the floor to reach a successor is still governed by §3: with evidence,
+not with the calendar.
+
 The real longevity risks in an Apple app are **not** Apple's API policy. They
 are the three below.
 
@@ -140,3 +164,12 @@ useful later — "we chose X because Y; if Y stops being true, revisit" beats "w
 use X".
 
 The project's own risk register belongs with the project, not here.
+
+---
+
+## Source
+
+- [The SwiftUI WebView](https://troz.net/post/2025/swiftui-webview/), Sarah Reichelt —
+  the walkthrough of `WebView`/`WebPage` that prompted §1's corollary. Its API surface is
+  reference material and stays out of this skill; the availability floor above was
+  re-checked against the SDK.

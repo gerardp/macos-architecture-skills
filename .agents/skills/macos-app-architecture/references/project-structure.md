@@ -8,7 +8,10 @@ The authority here is not anyone's personal convention; it is the structure Appl
 
 ## The Structure
 
-Adapted for a SwiftPM package without an Xcode project, which is the default for this skill:
+Adapted for a SwiftPM package without an Xcode project, which is the default for this skill.
+**One target**; splitting into several is a separate decision with its own preconditions —
+see [modularization.md](modularization.md).
+
 
 ```
 MyApp/
@@ -114,3 +117,5 @@ Most project-structure guides target UIKit projects built with Xcode and carry o
 - [SwiftUI Project Structure Based on Apple Guidance](https://agenthicks.com/research/swiftui-project-structure-apple-guidance)
   — derives the structure from Apple’s official samples. It’s the best baseline of the evaluated options.
 - Layer-based variants and variants with layers nested inside each feature were reviewed and rejected for the reasons above.
+- When the single target itself becomes the problem, the folders above become module
+  candidates — but not one-to-one. See [modularization.md](modularization.md).

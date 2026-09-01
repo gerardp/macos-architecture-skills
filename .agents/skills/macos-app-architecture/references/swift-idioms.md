@@ -195,8 +195,79 @@ The other three are either automatic or inapplicable. Be wary of any design
 that requires an inheritance hierarchy to explain it: Swift almost always has
 a simpler protocol-based composition.
 
+## Isolation and Protocol Requirements
+
+The DIP rule above tells you to depend on a protocol. **How you declare that protocol
+decides whether an actor or a `@MainActor` type can ever conform to it**, and getting it
+wrong is discovered late, when the implementation you wanted to swap in turns out to be
+the isolated one.
+
+**Verified** (Swift 6.2.4, `-swift-version 6`), same protocol shape each time:
+
+| Protocol | Requirements | Conformer | Result |
+|---|---|---|---|
+| `: Sendable` | `async` | `actor`, `@MainActor class`, `struct` | **all compile** |
+| `: Sendable` | synchronous | `actor` | `error: conformance … crosses into actor-isolated code` |
+| `: Sendable` | synchronous | `@MainActor class` | same error |
+| *not* `Sendable` | synchronous | `@MainActor class` | **same error** |
+| *not* `Sendable` | synchronous | `@MainActor class`, conformance written `: @MainActor P` | compiles |
+| `: Sendable` | synchronous | `@MainActor class`, conformance written `: @MainActor P` | `error: cannot form … conformance to SendableMetatype-inheriting protocol` |
+
+Two things follow, and the second contradicts the explanation that circulates.
+
+**1. Make service protocol requirements `async`.** Row 1 is the whole answer: with `async`
+requirements the same protocol is satisfiable by a struct, an actor and a main-actor
+class alike, so the abstraction survives the implementation changing isolation later.
+This is why the repositories in this skill read
+
+```swift
+protocol NoteRepository: Sendable {
+    func loadAll() async throws -> [Note]     // async: any isolation can satisfy it
+}
+```
+
+and it costs nothing — `async` on a requirement a struct fulfils synchronously is free.
+
+**2. `Sendable` on the protocol is not what breaks synchronous requirements.** The
+explanation you will read is that inheriting `Sendable` makes members `nonisolated`. Row 4
+disproves it: a protocol with **no** `Sendable` at all rejects the same conformance with
+the same diagnostic. The cause is the synchronous requirement itself — a caller in any
+isolation domain must be able to invoke it, and an isolated member cannot promise that.
+
+What `Sendable` actually changes is **the escape hatch**. Swift 6.2 lets you write an
+isolated conformance (`: @MainActor P`, row 5) — and inheriting `Sendable` forbids exactly
+that (row 6). So marking a protocol `Sendable` out of habit removes the option you would
+have wanted.
+
+An isolated conformance is also narrower than it looks: the conforming value cannot leave
+its actor.
+
+```swift
+@MainActor final class Store: @MainActor Reporting { … }
+
+Task.detached { await consume(store) }
+// error: main actor-isolated conformance of 'Store' to 'Reporting'
+//        cannot be used in nonisolated context
+```
+
+That is a fair trade for a type that is main-actor state anyway, and a dead end for one
+that has to be handed to a background worker.
+
+**Do not reach for `nonisolated(unsafe)`.** It appears in write-ups as the fix for row 2,
+and it does compile — because it removes the actor's protection from that stored property
+entirely. It is an assertion that you have handled the synchronisation yourself, and in a
+service protocol you almost certainly have not. Change the requirement to `async` instead.
+
+`swift-concurrency` covers actors, `Sendable` and isolation as a subject. This section is
+only the part that decides how the protocols in [architecture.md](architecture.md#dependency-injection-three-mechanisms-one-rule)
+are declared.
+
 ## Sources
 
 - [Swift API Design Guidelines](https://www.swift.org/documentation/api-design-guidelines/) — official.
 - Server-side Swift practices (in a Hummingbird context): generics over
   existentials, structured concurrency, and `final` by default.
+- [Learning Swift Concurrency](https://christiantietze.de/posts/2025/11/learning-swift-concurrency-matt-massicotte-with-zettelkasten/),
+  Christian Tietze — raised the actor-vs-protocol-conformance tension. Its diagnosis
+  (that `Sendable` on the protocol makes members `nonisolated`) and its remedy
+  (`nonisolated(unsafe)`) are both corrected above, against the compiler.
