@@ -25,31 +25,38 @@ To keep this from becoming a dumping ground that duplicates installed skills:
 
 ## Index
 
-| Document | Contents | Status |
-|---|---|---|
-| [architecture.md](references/architecture.md) | MV pattern, bounded-context stores, Environment, Screens vs. Views, view logic, enum-based events, communication between stores | ✅ |
-| [antipatterns.md](references/antipatterns.md) | What not to do, with incorrect and correct code side by side | ✅ |
-| [overrides.md](references/overrides.md) | Where this skill **overrides** an installed skill, and why | ✅ |
-| [navigation.md](references/navigation.md) | Navigation on macOS: selection vs. stack, what does not carry over from iOS, windows | ✅ |
-| [validation.md](references/validation.md) | Five form-validation patterns, from the least to the most machinery | ✅ |
-| [testing.md](references/testing.md) | What deserves a test and which kind. The API is covered by `swift-testing-expert` | ✅ |
-| [observation.md](references/observation.md) | `@Observable` granularity (measured), lifecycle, and where an event enum fits | ✅ |
-| [project-structure.md](references/project-structure.md) | Chosen folder structure: flat and feature-based, with `Stores/` outside `Features/` | ✅ |
-| [previews.md](references/previews.md) | Previews as a design criterion, not a convenience. Narrow inputs, design-time types, named states | ✅ |
-| [swift-idioms.md](references/swift-idioms.md) | Only what `write-swift` does not cover: SOLID in Swift, one type per file, closure vs protocol, `.task` vs `Task { }`, and existentials at the SwiftUI boundary | ✅ |
-| [ownership.md](references/ownership.md) | Who owns each piece of data: `@State`, `@Binding`, `@Bindable`, `@Environment`, `@AppStorage`, and ownership anti-patterns | ✅ |
-| [view-composition.md](references/view-composition.md) | Generic `@ViewBuilder`, dedicated views vs. nested stacks, and why not to pass the entire model | ✅ |
-| [error-handling.md](references/error-handling.md) | Which errors warrant interruption, `LocalizedError`, presentation on macOS, and why typed throws are almost never appropriate | ✅ |
-| [longevity.md](references/longevity.md) | Why Apple's soft-deprecation changes what to worry about, third-party rot, toolchain drift, and containing fragile dependencies | ✅ |
-| [undo.md](references/undo.md) | `UndoManager` as a system responsibility, and why not to implement Memento by hand on macOS | ✅ |
-| `references/appkit-bridge.md` | Wrapping imperative AppKit views: state ownership, high-frequency events, observer lifecycle | ⏳ |
-| `references/text-editing.md` | TextKit 2 in editing apps: fragment geometry, line↔position mapping, synchronization between views | ⏳ |
-| `references/distribution.md` | Packaging and distribution outside the Mac App Store | ⏳ |
+| Document | Contents |
+|---|---|
+| [architecture.md](references/architecture.md) | MV pattern, bounded-context stores, Environment, Screens vs. Views, view logic, enum-based events, communication between stores |
+| [antipatterns.md](references/antipatterns.md) | What not to do, with incorrect and correct code side by side |
+| [overrides.md](references/overrides.md) | Where this skill **overrides** an installed skill, and why |
+| [navigation.md](references/navigation.md) | Navigation on macOS: selection vs. stack, what does not carry over from iOS, windows |
+| [validation.md](references/validation.md) | Five form-validation patterns, from the least to the most machinery |
+| [testing.md](references/testing.md) | What deserves a test and which kind. The API is covered by `swift-testing-expert` |
+| [observation.md](references/observation.md) | `@Observable` granularity (measured), lifecycle, and where an event enum fits |
+| [project-structure.md](references/project-structure.md) | Chosen folder structure: flat and feature-based, with `Stores/` outside `Features/` |
+| [previews.md](references/previews.md) | Previews as a design criterion, not a convenience. Narrow inputs, design-time types, named states |
+| [swift-idioms.md](references/swift-idioms.md) | Only what `write-swift` does not cover: SOLID in Swift, one type per file, closure vs protocol, `.task` vs `Task { }`, and existentials at the SwiftUI boundary |
+| [ownership.md](references/ownership.md) | Who owns each piece of data: `@State`, `@Binding`, `@Bindable`, `@Environment`, `@AppStorage`, and ownership anti-patterns |
+| [view-composition.md](references/view-composition.md) | Generic `@ViewBuilder`, dedicated views vs. nested stacks, and why not to pass the entire model |
+| [error-handling.md](references/error-handling.md) | Which errors warrant interruption, `LocalizedError`, presentation on macOS, and why typed throws are almost never appropriate |
+| [longevity.md](references/longevity.md) | Why Apple's soft-deprecation changes what to worry about, third-party rot, toolchain drift, and containing fragile dependencies |
+| [undo.md](references/undo.md) | `UndoManager` as a system responsibility, and why not to implement Memento by hand on macOS |
+
+### Planned, not written yet
+
+These files do not exist. Do not link to them, and do not cite them as if they had content.
+
+| Document | Will cover |
+|---|---|
+| `references/appkit-bridge.md` | Wrapping imperative AppKit views: state ownership, high-frequency events, observer lifecycle |
+| `references/text-editing.md` | TextKit 2 in editing apps: fragment geometry, line↔position mapping, synchronization between views |
+| `references/distribution.md` | Packaging and distribution outside the Mac App Store |
 
 ## Quick Rules
 
 1. **The SwiftUI view is the presentation layer.** Do not create a ViewModel
-   for every screen. → [anti-patterns](references/antipatterns.md#-mvvm-one-viewmodel-per-screen)
+   for every screen. → [anti-patterns](references/antipatterns.md#mvvm-one-viewmodel-per-screen)
 2. **One store per bounded context**, not per screen. And **one source of truth
    per piece of data**, not one for the entire app. → [ownership](references/ownership.md) → [architecture](references/architecture.md#bounded-context-stores)
 3. **Use `Screen` for full screens and `View` for reusable components.**
@@ -81,7 +88,7 @@ duplicate their content here.
 
 | Skill | Covers | Install |
 |---|---|---|
-| **write-swift** | The Swift language itself: value semantics and copy-on-write, `~Copyable` and ownership, `some` vs `any`, `@concurrent` and the Swift 6.2 concurrency model, ARC, performance. Baseline Swift 6.3 — items marked ⚠ are unreleased 6.4 | `npx skills add https://github.com/emilkowalski/skills --skill write-swift` |
+| **write-swift** | The Swift language itself: value semantics and copy-on-write, `~Copyable` and ownership, `some` vs `any`, `@concurrent` and the Swift 6.2 concurrency model, ARC, performance. Baseline Swift 6.3, with the items it flags as unreleased 6.4 | `npx skills add https://github.com/emilkowalski/skills --skill write-swift` |
 | **swiftui-expert-skill** | SwiftUI APIs, `@Observable` data flow, view invalidation, migrating deprecated APIs. Explicitly declines to impose an architecture, which is why it does not clash with this skill | `npx skills add https://github.com/avdlee/swiftui-agent-skill --skill swiftui-expert-skill` |
 | **swift-concurrency** | Actors, `Sendable`, task cancellation, Swift 6 migration. Checks the real `Package.swift` before advising | `npx skills add https://github.com/avdlee/swift-concurrency-agent-skill --skill swift-concurrency` |
 | **swift-testing-expert** | The Swift Testing API: `@Test`, `#expect`, traits, parameterised tests, parallelisation and `@MainActor` isolation | `npx skills add https://github.com/avdlee/swift-testing-agent-skill --skill swift-testing-expert` |

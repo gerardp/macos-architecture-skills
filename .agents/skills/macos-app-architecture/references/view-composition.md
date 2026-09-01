@@ -11,7 +11,7 @@ A row that sometimes shows time, sometimes a button, and sometimes nothing,
 written based on optional properties:
 
 ```swift
-// ❌ Each new variant adds an optional property and an `if let`.
+// Wrong — each new variant adds an optional property and an `if let`.
 struct Stop: View {
     let title: String
     let systemImage: String
@@ -37,7 +37,7 @@ struct Stop: View {
 It is not *incorrect*, but it does not scale: every customization adds a
 property, a conditional, and another nesting level.
 
-## ❌ The Shortcut That Makes Things Worse: Passing the Entire Model
+## The Shortcut That Makes Things Worse: Passing the Entire Model
 
 ```swift
 // Reduces properties, yes. But ties the view to the model layer,
@@ -50,7 +50,7 @@ struct Stop: View {
 This is the shortcut almost everyone takes when parameters grow. It changes a
 visible problem (many parameters) into an invisible one (tight coupling).
 
-## ✅ Approach 1: Dedicated Views Instead of Nested Stacks
+## Approach 1: Dedicated Views Instead of Nested Stacks
 
 Before stacking `HStack` + `Image` + `Text` + `Spacer` and tweaking modifiers
 by eye, check if SwiftUI already has the view. `Label` and `LabeledContent` not
@@ -63,7 +63,7 @@ Label(title, systemImage: systemImage)          // instead of HStack { Image; Te
 LabeledContent { accessory } label: { … }       // instead of HStack { …; Spacer(); … }
 ```
 
-## ✅ Approach 2: Pass Views as Parameters with `@ViewBuilder`
+## Approach 2: Pass Views as Parameters with `@ViewBuilder`
 
 The underlying solution. Instead of enumerating variants with optionals, let the
 caller build the accessory.
@@ -117,7 +117,7 @@ Three required details that are not obvious:
 3. **Custom initializers go in an extension**, or you lose the initializer by
    memberwise initializer synthesized by Swift.
 
-## ✅ Approach 3: Use `ViewModifier` for Repeated Styling
+## Approach 3: Use `ViewModifier` for Repeated Styling
 
 When what repeats is not structure but **appearance**, you don’t need a new view.
 A `ViewModifier` can be applied to any view —`Text`, `Image`, `Button`— which a
@@ -155,7 +155,7 @@ what constructions you can use and their consequences.
 Consequence: **all branches must return the same concrete type**.
 
 ```swift
-// ❌ Does not compile: branches return different types.
+// Wrong — does not compile: branches return different types.
 var body: some View {
     guard let name else { return ProgressView() }
     return Text(name)
@@ -168,7 +168,7 @@ statements in its body do not have matching underlying types
 ```
 
 ```swift
-// ✅ Inside the builder: `if let` supports branches of different types.
+// Right — inside the builder: `if let` supports branches of different types.
 var body: some View {
     if let name { Text(name) } else { ProgressView() }
 }
@@ -183,15 +183,15 @@ avoiding a pyramid of nesting through early exit—actually applies.
 ### Ternaries: Good for One Value, Bad When Nested
 
 ```swift
-// ✅ A ternary for choosing a value is readable.
+// Right — a ternary for choosing a value is readable.
 Text(title).foregroundStyle(isFavorite ? .yellow : .secondary)
 
-// ❌ Nested: no one reads this twice.
+// Wrong — nested: no one reads this twice.
 Text(count == 0 ? "empty" : count == 1 ? "one note" : "\(count) notes")
 ```
 
 ```swift
-// ✅ If there are more than two cases, use a switch — and in Swift it’s an
+// Right — if there are more than two cases, use a switch, and in Swift it’s an
 // expression.
 let label = switch count {
     case 0: "empty"

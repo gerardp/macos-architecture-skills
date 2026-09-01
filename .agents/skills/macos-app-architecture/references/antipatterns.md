@@ -5,7 +5,7 @@ something here looks like a good idea, read the rationale before reopening it.
 
 ---
 
-## ❌ MVVM: One ViewModel per Screen
+## MVVM: One ViewModel per Screen
 
 The SwiftUI view is already the presentation layer. One ViewModel per screen
 duplicates that layer and creates three problems.
@@ -193,7 +193,7 @@ class that adapts KVO.
 
 ---
 
-## ❌ Giant Views (the “massive view controller” by another name)
+## Giant Views (the “massive view controller” by another name)
 
 In UIKit the endemic problem was *massive view controllers*. SwiftUI removed
 the view controllers, but **the code that lived inside didn’t disappear**; it
@@ -203,7 +203,7 @@ That’s the real risk of taking the MV pattern lightly: without view models,
 everything tends toward the `body`.
 
 ```swift
-// ❌ Everything inside: formatting, domain logic, layout, and state.
+// Wrong — everything inside: formatting, domain logic, layout, and state.
 struct BudgetScreen: View {
     @Environment(TransactionStore.self) private var store
     @State private var range: SummaryRange = .year
@@ -246,7 +246,7 @@ Three concerns are mixed together, and none can be tested or previewed
 separately. Separate them as follows:
 
 ```swift
-// ✅ 1. Formatting, reusable and testable extensions.
+// 1. Formatting, reusable and testable extensions.
 //    (verified: compiles; output varies with the current locale)
 extension Int {
     /// Cents → localized currency text.
@@ -261,7 +261,7 @@ extension Date {
     var transactionFormat: String { formatted(date: .abbreviated, time: .omitted) }
 }
 
-// ✅ 2. Domain logic, a testable value type.
+// 2. Domain logic, a testable value type.
 struct ExpenseQuery {
     var range: SummaryRange
 
@@ -272,7 +272,7 @@ struct ExpenseQuery {
     }
 }
 
-// ✅ 3. Layout, moved into presentation components that can be previewed separately.
+// 3. Layout, moved into presentation components that can be previewed separately.
 struct BalanceView: View {
     let amount: Int
     var body: some View {
@@ -288,7 +288,7 @@ struct TransactionRowView: View {
     var body: some View { … }
 }
 
-// ✅ The screen becomes what it should be: composition.
+// The screen becomes what it should be: composition.
 struct BudgetScreen: View {
     @Environment(TransactionStore.self) private var store
     @State private var query = ExpenseQuery(range: .year)
@@ -308,10 +308,10 @@ without a UI?** See [previews.md](previews.md).
 
 ---
 
-## ❌ Storing What Can Be Derived
+## Storing What Can Be Derived
 
 ```swift
-// BAD: two sources of truth that must be kept in sync manually.
+// Wrong — two sources of truth that must be kept in sync manually.
 @State private var notes: [Note] = []
 @State private var filteredNotes: [Note] = []
 
@@ -322,7 +322,7 @@ private func applyFilter() {
 ```
 
 ```swift
-// GOOD: derive. Impossible to get out of sync.
+// Right — derive. Impossible to get out of sync.
 @State private var query = ""
 
 private var visibleNotes: [Note] {
@@ -339,10 +339,10 @@ This rule concerns **deriving data**, not splitting a long `body` into
 computed properties that return `some View`:
 
 ```swift
-// ✅ Derive DATA: correct, impossible to get out of sync.
+// Right — derive data: impossible to get out of sync.
 private var visibleNotes: [Note] { store.notes.filter { … } }
 
-// ❌ Split VIEWS: false economy. The body looks clean,
+// Wrong — split views: false economy. The body looks clean,
 //    but nothing has been decoupled.
 private var header: some View { VStack { … } }
 private var footer: some View { HStack { … } }
@@ -362,14 +362,14 @@ If a piece of `body` deserves a name, it deserves to be a `View`. See
 
 ---
 
-## ❌ An Enum for All View State
+## An Enum for All View State
 
 Very common pattern, and recommended in many guides — including
 [SwiftUI in 2025: Forget MVVM](https://dimillian.medium.com/swiftui-in-2025-forget-mvvm-262ff2bbd2ed),
 Thomas Ricouard, whose case against ViewModels this file otherwise shares:
 
 ```swift
-// ❌ Sum type: only one case can be true at a time.
+// Wrong — sum type: only one case can be true at a time.
 enum ViewState {
     case loading
     case loaded([Note])
@@ -402,7 +402,7 @@ Every overlapping state multiplies the cases. It’s the symptom of using a sum
 type where a product type was needed.
 
 ```swift
-// ✅ Struct: states can overlap without breaking.
+// Right — struct: states can overlap without breaking.
 struct NoteListState {
     var notes: [Note] = []
     var isLoading = false
@@ -440,17 +440,17 @@ sum type.
 > | Models | Something that **happened**, once | Something that **is**, continuously |
 > | Do they overlap? | No: an event is one | Yes, almost always: loading *with* old notes |
 > | Lifetime | Instantaneous; consumed and gone | Persists between redraws |
-> | Verdict | ✅ Use it | ⚠️ Only when the states are truly exclusive |
+> | Verdict | Use it | Only when the states are truly exclusive |
 >
 > An event is inherently momentary, so a sum type fits perfectly. State lasts,
 > and long-lived states tend to overlap.
 
 ---
 
-## ❌ Letting a Reusable Component Read from the `Environment`
+## Letting a Reusable Component Read from the `Environment`
 
 ```swift
-// BAD: NoteRowView is no longer reusable. It carries an invisible contract
+// Wrong — NoteRowView is no longer reusable. It carries an invisible contract
 // and will break in any context where `NoteStore` doesn’t exist, including
 // previews.
 struct NoteRowView: View {
@@ -461,7 +461,7 @@ struct NoteRowView: View {
 ```
 
 ```swift
-// GOOD: receives what it needs, emits events. It can be previewed and reused
+// Right — receives what it needs, emits events. It can be previewed and reused
 // anywhere.
 struct NoteRowView: View {
     let note: Note
@@ -474,7 +474,7 @@ struct NoteRowView: View {
 
 ---
 
-## ❌ N Closures Instead of an Event Enum
+## N Closures Instead of an Event Enum
 
 See the full example in
 [architecture.md](architecture.md#events-grouped-in-an-enum). In short: with
@@ -484,7 +484,7 @@ you to every consumer.
 
 ---
 
-## ❌ Routing High-Frequency Events Through SwiftUI
+## Routing High-Frequency Events Through SwiftUI
 
 Scroll, drag, cursor movement are per‑frame signals. Passing them through the
 SwiftUI update cycle—binding them to an `@Binding` or mutating an
@@ -492,12 +492,12 @@ SwiftUI update cycle—binding them to an `@Binding` or mutating an
 the `body` and triggers a diff that you don’t need.
 
 ```swift
-// ❌ Every pixel of scroll invalidates the parent view’s body.
+// Wrong — every pixel of scroll invalidates the parent view’s body.
 @Observable final class ScrollState { var offset: CGFloat = 0 }
 ```
 
 ```swift
-// ✅ Direct imperative path between the two views, and observable state
+// Right — direct imperative path between the two views, and observable state
 //    only for what the declarative UI actually paints.
 final class ScrollBridge {                     // not @Observable
     var onScroll: ((CGFloat) -> Void)?
@@ -508,7 +508,7 @@ Observable state is for what gets rendered, not for high-frequency synchronizati
 
 ---
 
-## ❌ Putting a Database Under a File-Based Model
+## Putting a Database Under a File-Based Model
 
 If the source of truth is a set of files that users can edit outside the app
 (through iCloud, Dropbox, or another editor), putting Core Data or SwiftData in
@@ -520,7 +520,7 @@ source of truth—and only after measurements show that it is needed.
 
 ---
 
-## ❌ Assuming iOS Material Applies to macOS
+## Assuming iOS Material Applies to macOS
 
 Repeatedly verified: UIKit material doesn’t apply to macOS; SwiftUI
 performance audits don’t touch TextKit or WebKit; release guides assume Xcode

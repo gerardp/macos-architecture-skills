@@ -10,7 +10,7 @@ Almost every rule in this skill can be checked with one question: **Can I
 preview this with fake data and no dependencies?**
 
 - Does a `…View` read from the `Environment`? → It cannot be previewed without setting up the environment. [Rule](architecture.md#who-can-read-from-the-environment).
-- Does a store perform I/O in `init`? → The preview touches disk or network. [Rule](observation.md#2-do-not-rely-on-init-deinit).
+- Does a store perform I/O in `init`? → The preview touches disk or network. [Rule](observation.md#2-do-not-rely-on-init--deinit).
 - Does the logic live inside `body`? → It can only be tested by launching the UI. [Rule](testing.md).
 
 ---
@@ -21,12 +21,12 @@ Pass the view **only what it displays**, not the entire domain object. That
 keeps the preview from having to construct an expensive model.
 
 ```swift
-// ❌ To preview this you must build a full Note, and if Note has dependencies, drag them in too.
+// Wrong — to preview this you must build a full Note, and if Note has dependencies, drag them in too.
 struct NoteRowView: View {
     let note: Note
 }
 
-// ✅ Minimal inputs: the preview is a line.
+// Right — minimal inputs: the preview is a line.
 struct NoteRowView: View {
     let title: String
     let isFavorite: Bool
@@ -45,7 +45,7 @@ entire model. Recognize the *data clump* smell: a group of values that **always
 travel together** is a type you have not written yet.
 
 ```swift
-// ❌ Five parameters that are never used separately.
+// Wrong — five parameters that are never used separately.
 struct NoteRowView: View {
     let title: String
     let excerpt: String
@@ -54,7 +54,7 @@ struct NoteRowView: View {
     let modifiedAt: Date
 }
 
-// ✅ The clump was a type: narrow, without dependencies, trivial to build in a preview or test.
+// Right — the clump was a type: narrow, without dependencies, trivial to build in a preview or test.
 struct NoteSummary: Equatable {
     let title: String
     let excerpt: String

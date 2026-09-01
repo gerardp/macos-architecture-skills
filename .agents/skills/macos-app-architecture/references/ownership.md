@@ -34,32 +34,32 @@ The last row is the one most often forgotten: **if the view only renders the
 data, it needs no property wrapper**. Use a regular `let`.
 
 ```swift
-// ✅ Only displays data: normal property.
+// Only displays data: normal property.
 struct NoteRowView: View {
     let title: String
     let isFavorite: Bool
     var body: some View { … }
 }
 
-// ✅ Owns the data: @State.
+// Owns the data: @State.
 struct SearchScreen: View {
     @State private var query = ""
     var body: some View { SearchFieldView(query: $query) }
 }
 
-// ✅ Modifies a value higher up: @Binding.
+// Modifies a value higher up: @Binding.
 struct SearchFieldView: View {
     @Binding var query: String
     var body: some View { TextField("Search…", text: $query) }
 }
 
-// ✅ Modifies an object higher up: @Bindable.
+// Modifies an object higher up: @Bindable.
 struct NoteEditorScreen: View {
     @Bindable var note: NoteDraft          // class @Observable
     var body: some View { TextField("Title", text: $note.title) }
 }
 
-// ✅ Available throughout the hierarchy: @Environment.
+// Available throughout the hierarchy: @Environment.
 struct NoteListScreen: View {
     @Environment(NoteStore.self) private var store
     var body: some View { List(store.notes) { NoteRowView(title: $0.title, isFavorite: $0.isFavorite) } }
@@ -139,10 +139,10 @@ data‑flow entanglements.
 
 ## State Ownership Anti-Patterns
 
-### ❌ Using `@State` for Data Received from Outside
+### Using `@State` for Data Received from Outside
 
 ```swift
-// BAD: two copies of the same data. If the parent changes the title,
+// Wrong — two copies of the same data. If the parent changes the title,
 // this view won’t notice: @State only takes the initial value.
 struct NoteTitleView: View {
     @State private var title: String
@@ -152,7 +152,7 @@ struct NoteTitleView: View {
 ```
 
 ```swift
-// GOOD: if it only shows, it’s a normal property. If it edits, it’s a @Binding.
+// Right — if it only shows, it’s a normal property. If it edits, it’s a @Binding.
 struct NoteTitleView: View {
     let title: String
 }
@@ -160,10 +160,10 @@ struct NoteTitleView: View {
 
 Rule: **`@State` is for data the view *creates*, not data it *receives*.**
 
-### ❌ Duplicating Data That Already Lives in the Store
+### Duplicating Data That Already Lives in the Store
 
 ```swift
-// BAD: `notes` exists twice and must be manually synchronized.
+// Wrong — `notes` exists twice and must be manually synchronized.
 struct NoteListScreen: View {
     @Environment(NoteStore.self) private var store
     @State private var notes: [Note] = []
@@ -176,28 +176,28 @@ struct NoteListScreen: View {
 ```
 
 ```swift
-// GOOD: read from the owner. Observation takes care of the rest.
+// Right — read from the owner. Observation takes care of the rest.
 struct NoteListScreen: View {
     @Environment(NoteStore.self) private var store
     var body: some View { List(store.notes) { … } }
 }
 ```
 
-### ❌ Lifting State Used by Only One View
+### Lifting State Used by Only One View
 
 Whether a pop-up is open, the unsubmitted text in a field, or which row is
 hovered: these belong to the view, not the store. Lifting them makes **every
 keystroke invalidate every view that reads the store**.
 
 ```swift
-// BAD
+// Wrong
 @Observable final class NoteStore {
     var notes: [Note] = []
     var isSidebarExpanded = true      // ← No one else needs it
     var hoveredRowID: Note.ID?        // ← Invalidates the store on every mouse move
 }
 
-// GOOD: in the view that actually uses it.
+// Right — in the view that actually uses it.
 struct SidebarView: View {
     @State private var isExpanded = true
     @State private var hoveredRowID: Note.ID?

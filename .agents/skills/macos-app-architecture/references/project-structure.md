@@ -59,7 +59,7 @@ It is no more complex: **the same files are simply grouped along a different axi
 Two differences from what you see in most articles:
 
 - **There are no `ViewModels`.** See
-  [antipatterns.md](antipatterns.md#-mvvm-one-viewmodel-per-screen).
+  [antipatterns.md](antipatterns.md#mvvm-one-viewmodel-per-screen).
 - **Stores do not live inside a feature**, even in a feature-based structure. This follows directly from the architecture: a store is defined by a **bounded context**, not a screen, and usually serves several features at once. Putting `NoteStore` inside `Features/NoteList/` would become misleading as soon as the editor and sidebar used it—and they will.
 
 Rule: **If two features share it, it does not belong to either of them.**
@@ -69,7 +69,7 @@ Rule: **If two features share it, it does not belong to either of them.**
 There is a popular variant that nests layers inside each feature:
 
 ```
-Features/Auth/Views/…      ← ❌ overengineering for a single-developer app
+Features/Auth/Views/…      ← overengineering for a single-developer app
 Features/Auth/ViewModels/…
 Features/Auth/Models/…
 ```

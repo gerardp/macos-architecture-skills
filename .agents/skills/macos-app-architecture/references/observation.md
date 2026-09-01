@@ -19,17 +19,17 @@ struct NestedState { var a = 0; var b = 0 }
 
 | Case | Reads | Changes | Invalidates? |
 |---|---|---|---|
-| Flat | `flat.a` | `flat.b` | **no** ✅ |
-| Nested | `nested.state.a` | `nested.state.b` | **yes** ❌ |
+| Flat | `flat.a` | `flat.b` | **no** |
+| Nested | `nested.state.a` | `nested.state.b` | **yes** |
 
 ```swift
-// ❌ Blob: any change repaints everything that reads the store.
+// Wrong — blob: any change repaints everything that reads the store.
 @Observable final class NoteStore {
     struct State { var notes: [Note] = []; var query = ""; var isLoading = false }
     var state = State()
 }
 
-// ✅ Flat properties: each view only invalidates what it reads.
+// Right — flat properties: each view only invalidates what it reads.
 @Observable final class NoteStore {
     private(set) var notes: [Note] = []
     var query = ""
@@ -50,7 +50,7 @@ In SwiftUI **you do not control view lifecycles**: the framework creates and des
 **Practical consequence**: any pattern that depends on `init` and `deinit` is fragile.
 
 ```swift
-// ❌ Fragile: the subscription is created and cancelled when the framework decides.
+// Wrong — fragile: the subscription is created and cancelled when the framework decides.
 @Observable final class NoteStore {
     private var watcher: FSEventStreamRef?
     init() { watcher = startWatching() }
@@ -59,7 +59,7 @@ In SwiftUI **you do not control view lifecycles**: the framework creates and des
 ```
 
 ```swift
-// ✅ Explicit: the lifecycle is set by the view, which does expose it.
+// Right — explicit: the lifecycle is set by the view, which does expose it.
 struct NoteListScreen: View {
     @Environment(NoteStore.self) private var store
 

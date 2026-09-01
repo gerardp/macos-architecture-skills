@@ -172,7 +172,7 @@ Start with pattern 4 and move to 5 only when repetition becomes painful.
 
 1. **Derive, don’t store.** `isValid` is a computed property, never a `@State`
    that you have to remember to refresh. See
-   [antipatterns.md](antipatterns.md#-storing-what-can-be-derived).
+   [antipatterns.md](antipatterns.md#storing-what-can-be-derived).
 2. **Presentation validation lives in the view or its form type; domain validation
    lives in the model.** “This field isn’t empty” is presentation. “Two notes with
    the same name in the same folder are not allowed” is domain, and belongs in the

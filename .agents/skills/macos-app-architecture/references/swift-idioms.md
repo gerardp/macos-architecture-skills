@@ -83,11 +83,11 @@ What it does not cover, because it is a SwiftUI API rather than a language one:
 **`.task` manages that cancellation for you.**
 
 ```swift
-// ✅ Tied to the view's lifetime — SwiftUI cancels it on disappear.
+// Tied to the view's lifetime — SwiftUI cancels it on disappear.
 .task { await store.startWatching() }
 .task(id: selectedNoteID) { await load() }   // re-cancelled when the id changes
 
-// ✅ Correct, and the only option inside a synchronous action closure —
+// Correct, and the only option inside a synchronous action closure —
 //    but it is NOT cancelled when the view goes away.
 Button("Save") { Task { try await store.save(note) } }
 ```
@@ -150,13 +150,13 @@ worthwhile only for a published package**; inside an app it is needless machiner
 
 SOLID was coined for object-oriented programming with inheritance. Swift is a language of value types and protocols, so the translation is not direct.
 
-| Principle | In Swift |
-|---|---|
-| **S** Single Responsibility | ✅ Carries over as a smell. A view that handles networking, persistence, and layout has three reasons to change |
-| **O** Open/Closed | ⚠️ **Dissolves**: what OOP often achieves through inheritance can be handled with `extension`, even on external types. There is nothing extra to apply |
-| **L** Liskov Substitution | ❌ **No landing spot**: structs and enums do not inherit, and classes are written `final`. Without hierarchies, there is no substitution to guarantee |
-| **I** Interface Segregation | ✅ **Native**: `Equatable`, `Hashable`, `Sendable`, `Identifiable` — minimal and composable protocols. Not something you apply; the language already thinks that way |
-| **D** Dependency Inversion | ✅ Carries over and is the most useful. The abstraction is a protocol and injection uses `@Environment`—no DI container or factory registry. See [architecture.md](architecture.md#dependency-injection-three-mechanisms-one-rule) |
+| Principle | Verdict | In Swift |
+|---|---|---|
+| **S** Single Responsibility | Transfers | Carries over as a smell. A view that handles networking, persistence, and layout has three reasons to change |
+| **O** Open/Closed | Dissolves | What OOP often achieves through inheritance can be handled with `extension`, even on external types. There is nothing extra to apply |
+| **L** Liskov Substitution | No landing spot | Structs and enums do not inherit, and classes are written `final`. Without hierarchies, there is no substitution to guarantee |
+| **I** Interface Segregation | Native | `Equatable`, `Hashable`, `Sendable`, `Identifiable` — minimal and composable protocols. Not something you apply; the language already thinks that way |
+| **D** Dependency Inversion | Transfers, and matters most | The abstraction is a protocol and injection uses `@Environment`—no DI container or factory registry. See [architecture.md](architecture.md#dependency-injection-three-mechanisms-one-rule) |
 
 The two that “dissolve”, in one line each:
 

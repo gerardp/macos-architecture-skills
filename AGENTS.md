@@ -31,7 +31,7 @@ reference documents as examples, and is there to show a pattern, not to be compi
    tag `v<version>`. The semver policy — what counts as major for a rule rather than for code — is at
    the top of that file. MAJOR entries must state what they invalidate.
 5. **Keep the index honest.** New reference file → add its row to the index table in `SKILL.md`.
-   A ⏳ row means planned and unwritten; do not link to a file that does not exist.
+   A row under *Planned, not written yet* is unwritten; do not link to a file that does not exist.
 6. **Relative links only.** Links inside the skill must resolve after installation, where the skill
    sits in a consumer's `.agents/skills/` and this repository's root does not exist.
 

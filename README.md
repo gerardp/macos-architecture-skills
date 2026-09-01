@@ -77,7 +77,7 @@ npx skills add https://github.com/Dimillian/Skills --skill macos-spm-app-packagi
 </pre>
 
 Three documents are planned and not written yet — `appkit-bridge.md`, `text-editing.md` and
-`distribution.md`. They are marked ⏳ in the index and are not linked from anywhere else.
+`distribution.md`. The index lists them under *Planned, not written yet*, and nothing links to them.
 
 ## Keeping it current
 

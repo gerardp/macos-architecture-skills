@@ -40,7 +40,7 @@ refreshing it from `.onChange(of: items)`.
 **Our approach**: derive. A computed property (`var visibleNotes: [Note]`) is
 the default, as in
 [architecture.md](architecture.md#keeping-view-logic-in-the-view) and
-[antipatterns.md](antipatterns.md#-storing-what-can-be-derived). Caching is a
+[antipatterns.md](antipatterns.md#storing-what-can-be-derived). Caching is a
 measured optimization, not a starting point, and when it is warranted it needs
 an explicit update rule, not a mirror kept in sync by hand.
 

@@ -79,7 +79,7 @@ This is the same rule described in
 [Screens vs. Views](architecture.md#screens-vs-views), and this example shows
 why it matters.
 
-**❌ Navigation wired into the component**
+**Wrong — navigation wired into the component**
 
 ```swift
 struct NoteRowView: View {
@@ -95,7 +95,7 @@ struct NoteRowView: View {
 `NoteRowView` can no longer be used in a dialog's picker or in a search-results
 list that opens items in a new window. Its destination is hard-wired.
 
-**✅ The component emits an event; the screen decides**
+**Right — the component emits an event; the screen decides**
 
 ```swift
 struct NoteRowView: View {

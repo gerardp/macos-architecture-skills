@@ -79,7 +79,7 @@ also register the same edit, each ⌘Z will undo it twice.
 ## Anti-Pattern: A Custom State Stack
 
 ```swift
-// ❌ Hand-rolled Memento. It works and is still wrong on macOS.
+// Wrong — hand-rolled Memento. It works and is still wrong on macOS.
 @Observable final class NoteStore {
     private var history: [[Note]] = []
 

@@ -19,7 +19,7 @@ MVVM](https://dimillian.medium.com/swiftui-in-2025-forget-mvvm-262ff2bbd2ed));
 a library such as TCA only gets there with machinery of its own. Until then,
 whatever reads the environment is a view.
 
-The concrete cost is described in [antipatterns.md](antipatterns.md#-mvvm-one-viewmodel-per-screen).
+The concrete cost is described in [antipatterns.md](antipatterns.md#mvvm-one-viewmodel-per-screen).
 
 ## Bounded-Context Stores
 
@@ -146,13 +146,13 @@ so views depend on an abstraction. **SwiftUI does not allow it.** Verified by
 compiling against a macOS 14 target:
 
 ```swift
-@Environment(NoteStore.self)   private var store   // ✅ compiles
-@Environment(NoteStoring.self) private var store   // ❌ no exact matches in call to initializer
+@Environment(NoteStore.self)   private var store   // compiles
+@Environment(NoteStoring.self) private var store   // error: no exact matches in call to initializer
 ```
 
 ```swift
-@Bindable var store: NoteStore          // ✅ compiles
-@Bindable var store: any NoteStoring    // ❌ 'init(wrappedValue:)' is unavailable:
+@Bindable var store: NoteStore          // compiles
+@Bindable var store: any NoteStoring    // error: 'init(wrappedValue:)' is unavailable:
                                         //    The wrapped value must be an object
                                         //    that conforms to Observable
 ```
@@ -248,7 +248,7 @@ struct NoteListView: View {
 
 A container can feed **multiple** nested presenters; that’s the normal case, not an exception.
 
-**⚠️ Do not make a container for every view.** This is the classic mistake when
+**Do not make a container for every view.** This is the classic mistake when
 discovering the pattern: it adds indirection at every level and fills the tree
 with forwarding views. Dan Abramov, who popularized the pattern in React, later
 retracted the advice to apply it universally. Use a container where real loading
@@ -291,7 +291,7 @@ Notice there is **no `@State private var filteredNotes`**. Deriving instead of s
 A reusable component delegates events to its parent. Two closures are fine;
 with five, the call becomes unreadable.
 
-**❌ One closure per event**
+**Wrong — one closure per event**
 
 ```swift
 struct NoteRowView: View {
@@ -309,7 +309,7 @@ NoteRowView(note: note,
             onDuplicate: { … }, onReveal: { … })
 ```
 
-**✅ One enum of events, one closure**
+**Right — one enum of events, one closure**
 
 ```swift
 enum NoteRowEvent {
@@ -420,7 +420,7 @@ so nothing has to be unregistered from the view side.
 
 **Important limitation**: this applies to domain events, not high-frequency
 signals. A 60 fps scroll should not travel through this path; see
-[antipatterns.md](antipatterns.md#-routing-high-frequency-events-through-swiftui).
+[antipatterns.md](antipatterns.md#routing-high-frequency-events-through-swiftui).
 
 ## References
 

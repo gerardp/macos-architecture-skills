@@ -57,7 +57,7 @@ comes to mind, the error may not warrant an alert.
 ## 3. The Error Lives in State, Not in Thin Air
 
 ```swift
-// ✅ The error is part of the state, alongside data that survives.
+// The error is part of the state, alongside data that survives.
 struct NoteListState {
     var notes: [Note] = []
     var isLoading = false
@@ -68,7 +68,7 @@ struct NoteListState {
 Notice that `notes` **is not cleared** when an error occurs. This is the same
 reason a view's state should not be an enum: after a reload fails, you still
 want to display the data you already had. See
-[antipatterns.md](antipatterns.md#-an-enum-for-all-view-state).
+[antipatterns.md](antipatterns.md#an-enum-for-all-view-state).
 
 ---
 
@@ -127,15 +127,15 @@ unless one of those three cases applies.
 
 ## Anti-Patterns
 
-### ❌ `try?` That Swallows the Failure
+### `try?` That Swallows the Failure
 
 ```swift
-// BAD: if it fails, the list becomes empty and the user has no idea why.
+// Wrong — if it fails, the list becomes empty and the user has no idea why.
 let notes = try? await repository.loadAll()
 ```
 
 ```swift
-// GOOD: decide the level. Here it is informative: keep what you had.
+// Right — decide the level. Here it is informative: keep what you had.
 do {
     state.notes = try await repository.loadAll()
 } catch let error as NoteError {
@@ -147,16 +147,16 @@ do {
 
 `try?` is legitimate when the failure is truly ignorable and you state it explicitly: `let cached = try? cache.read()` followed by a default value.
 
-### ❌ `catch { print(error) }`
+### `catch { print(error) }`
 
 No one sees that console in a signed, distributed app. Either expose the error
 in state, record it with `Logger`, or deliberately ignore it—but a `print` is
 all three and none of them at once.
 
-### ❌ One `case unknown(String)` for Everything
+### One `case unknown(String)` for Everything
 
 ```swift
-// BAD: the enum adds nothing; it’s just a String with extra steps.
+// Wrong — the enum adds nothing; it’s just a String with extra steps.
 enum AppError: Error { case unknown(String) }
 ```
 
@@ -164,7 +164,7 @@ If you cannot enumerate the failures, you do not yet understand the domain. An
 error enum is valuable precisely because its `switch` is exhaustive and **the
 compiler warns you** when a new case is added.
 
-### ❌ A Modal Alert for a Recoverable Failure
+### A Modal Alert for a Recoverable Failure
 
 See §1. If the user can keep working, do not block their window.
 

@@ -51,7 +51,7 @@ property is renamed even though nothing visible changed.
 That is not coverage; it is friction.
 
 ```swift
-// ❌ Tests IMPLEMENTATION. Zero refactor resistance.
+// Wrong — tests the implementation. Zero refactor resistance.
 @Test func loadSetsIsLoadingThenClearsIt() async throws {
     let store = NoteStore(repository: InMemoryNoteRepository())
     #expect(store.isLoading == false)
@@ -65,7 +65,7 @@ That is not coverage; it is friction.
 ```
 
 ```swift
-// ✅ Tests BEHAVIOR. Pure black box: inputs and outputs.
+// Right — tests behavior. Pure black box: inputs and outputs.
 @Test("Loading makes the directory's notes available")
 func loadExposesNotesFromDirectory() async throws {
     let store = NoteStore(repository: InMemoryNoteRepository(seed: [
@@ -209,7 +209,7 @@ one ran has a hidden dependency, and you want to know now rather than in CI.
 Previews validate layout visually. Snapshot testing validates it **in CI**:
 it renders the view, compares it to a reference image, and fails if it changes.
 
-`pointfreeco/swift-snapshot-testing` (MIT, 4325★, active) supports macOS 10.15+
+`pointfreeco/swift-snapshot-testing` (MIT, ~4.3k stars, active) supports macOS 10.15+
 and includes strategies for `NSView`, `NSViewController`, and SwiftUI views —
 so it works for an AppKit panel wrapped as well as a plain `View`.
 
