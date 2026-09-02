@@ -28,6 +28,78 @@ a stated consequence becomes silent drift by accident.
 Release procedure: bump `metadata.version` in `SKILL.md` and add the entry here **in the same commit
 as the rule change**, then tag `v<version>`.
 
+## 4.0.0 — 2026-09-02
+
+**MAJOR: a new Quick Rule and a new anti-pattern. Existing code can violate both.**
+
+1. **Quick Rule 20 — distribution is decided before the first release.** New document:
+   [distribution.md](references/distribution.md), which fills the `distribution.md` slot
+   listed as planned since 1.0.0. It covers only the decisions; signing, notarization,
+   packaging and the Sparkle API stay with `axiom-macos` and `macos-spm-app-packaging`,
+   and §5 states the split explicitly.
+
+   Two of its facts invalidate existing configurations:
+
+   - **The sandbox reaches the updater.** **Verified** against Sparkle's sandboxing guide,
+     2026-09-02: a sandboxed app needs `SUEnableInstallerLauncherService` **and** a
+     `com.apple.security.temporary-exception.mach-lookup.global-name` entitlement listing
+     `$(PRODUCT_BUNDLE_IDENTIFIER)-spks` and `-spki`; a non-sandboxed app needs neither.
+     *Comply*: check that a sandboxed app shipping Sparkle has both halves. Half of the
+     pair builds, notarizes, launches and downloads an update, then fails to install it —
+     on a user's machine, in a build already shipped.
+   - **`SUPublicEDKey` is permanent for every copy already installed.** Sparkle verifies
+     against the key the *installed build* carries. **Verified** against Sparkle's
+     documentation, 2026-09-02: the private key is erased with the Keychain, and recovery
+     by key rotation works *because the app is Developer ID signed*. An app without that
+     signature has no fallback. *Comply*: back the private key up off the build machine,
+     give it the same status as the Developer ID certificate, and record both it and
+     `SUFeedURL` as standing decisions.
+
+2. **[The global updater](references/distribution.md#2-one-file-imports-sparkle-and-the-app-owns-it).**
+   New anti-pattern. An `UpdaterManager.shared` singleton read by views through
+   `@ObservedObject` breaks three rules at once: a `static let` makes the scope the process
+   rather than the injected subtree, `@ObservedObject` on an unowned object leans on the
+   global to stay alive, and constructing the singleton in a preview starts a real
+   `SPUStandardUpdaterController`. *Comply*: define an `UpdateChecking` protocol in the
+   app's own vocabulary, let exactly one type conform to it with `import Sparkle`, and have
+   the App own it with `@StateObject`. The `ObservableObject` bridge remains the exception
+   [antipatterns.md](references/antipatterns.md#exception-bridging-a-kvocombine-api) already
+   allows — contained to one file, which is the point.
+
+Also in this release, invalidating nothing on their own:
+
+- **[overrides.md](references/overrides.md) gains a nuance from `axiom-macos`**:
+  `direct-distribution.md:410-430` keeps `controller.updater` but lets the
+  `SPUStandardUpdaterController` go out of scope, where every official Sparkle example
+  stores the controller itself. It is filed as a **nuance, not an override** — whether
+  dropping it breaks the flow was **not measured**, and Sparkle documents no retention
+  rule. The Nuances section is now split by source skill.
+- The `axiom-macos` entry under *Revision Status* records the distribution split, in the
+  same shape as the existing scope notice for the unwritten `appkit-bridge.md`.
+
+**Reviewed for this release, and mostly not taken.** Four skill repositories were read
+against the admission rule:
+
+- [fayazara/macos-app-skills](https://github.com/fayazara/macos-app-skills) `auto-update` —
+  the source of all three anti-patterns above, which it recommends. Nothing was copied: it
+  states MIT in its README and ships no licence file.
+- [Dimillian/Skills](https://github.com/Dimillian/Skills) — already a companion. Its
+  `references/release.md` is 1.2 KB and covers the appcast side only, which is why §2 to §4
+  of the new document had nowhere else to live. The companion table's description of it was
+  re-read and is accurate.
+- [prisma-labs-dev/apple-skills](https://github.com/prisma-labs-dev/apple-skills) — **not
+  adopted**. iOS-first, and its `disabled-skills/README.md` states the opposite editorial
+  position to this skill's, disabling a guide for *"mandates MV over MVVM"*. That makes it
+  an execution-layer set, like `swiftui-expert-skill`; it does not conflict, it just does
+  not answer anything here. Its re-publication of Dimillian's packaging skill, with
+  `origin:` and `license:` in the frontmatter, is the model to follow if this skill ever
+  vendors third-party material.
+- [patrickserrano/skills](https://github.com/patrickserrano/skills) — **not adopted**. An
+  acknowledged adaptation of Dimillian's, last touched three minutes after it was created
+  on 2026-01-17. Eight of its ten skills declare a `name:` that differs from their
+  directory, and one of them declares `name: macos-spm-app-packaging`, which would collide
+  with the companion this skill already recommends.
+
 ## 3.0.0 — 2026-09-01
 
 **MAJOR: a new Quick Rule and two new anti-patterns. Existing code can violate all three.**

@@ -61,7 +61,11 @@ contradicts itself two sections later—`performance-patterns.md:389-399`
 ## Nuances (Not Overrides)
 
 Refinements to installed skills that do not contradict them. Recorded here so
-they do not get rediscovered. All three come from
+they do not get rediscovered.
+
+### From `swiftui-performance-audit`
+
+These three come from
 [swiftui-performance-audit](https://github.com/Dimillian/Skills/tree/main/swiftui-performance-audit)
 (Thomas Ricouard, MIT), which is otherwise not worth installing: it duplicates
 `swiftui-expert-skill` and `instruments-profiling`, and its profiling path asks
@@ -87,6 +91,22 @@ command line.
   (4) image decode and resize, (5) layout and animation complexity.
   (`code-smells.md:143`)
 
+### From `axiom-macos`
+
+- **Keep the `SPUStandardUpdaterController`, not just its updater.**
+  `direct-distribution.md:410-430` builds the controller inside `init`, stores
+  `controller.updater`, and lets the controller go out of scope. Every official
+  Sparkle example stores the controller itself as a property. **Not measured
+  here** whether dropping it breaks the update flow — `SPUUpdater` may retain
+  enough of the graph, and Sparkle's documentation states no retention rule — so
+  this is a nuance, not an override. One stored property removes the question,
+  and the failure it would cause (an updater that silently stops checking) is
+  invisible until users stop receiving updates.
+  See [distribution.md §3](distribution.md#3-the-controller-is-the-object-that-must-stay-alive).
+  **Verified**: file read at
+  `axiom-codex/skills/axiom-macos/skills/direct-distribution.md`, 2026-09-02;
+  Sparkle's programmatic-setup documentation read the same day.
+
 ---
 
 ## Revision Status
@@ -107,7 +127,10 @@ command line.
   development including… AppKit bridging"* (`SKILL.md:9`). **Scope notice**:
   when writing `appkit-bridge.md` here, it must address *who owns the state and
   how high-frequency events are bridged* — the decision. The mechanics of
-  `NSViewRepresentable` are theirs.
+  `NSViewRepresentable` are theirs. The same split now applies to
+  distribution: `direct-distribution.md` keeps signing, notarization, packaging
+  and the Sparkle API; [distribution.md](distribution.md) takes only the
+  decisions those mechanics assume have already been made.
 
 ---
 

@@ -1,9 +1,9 @@
 ---
 name: macos-app-architecture
-description: Architecture and patterns for native macOS apps built with SwiftUI and AppKit—MV vs. MVVM, bounded-context stores, Environment, Screen/View naming, enum-based event grouping, communication between stores, bridging to imperative AppKit views, when to split the app into SwiftPM modules, and running external processes under the App Sandbox. Use when designing a macOS app's structure, deciding where state belongs, creating a store or view, or wrapping an NSView in SwiftUI. Includes anti-patterns with examples of what not to do.
+description: Architecture and patterns for native macOS apps built with SwiftUI and AppKit—MV vs. MVVM, bounded-context stores, Environment, Screen/View naming, enum-based event grouping, communication between stores, bridging to imperative AppKit views, when to split the app into SwiftPM modules, running external processes under the App Sandbox, and the decisions behind distributing and auto-updating an app outside the Mac App Store. Use when designing a macOS app's structure, deciding where state belongs, creating a store or view, wrapping an NSView in SwiftUI, or planning distribution and Sparkle updates. Includes anti-patterns with examples of what not to do.
 license: MIT
 metadata:
-  version: 3.0.0
+  version: 4.0.0
 ---
 
 # macOS App Architecture (SwiftUI + AppKit)
@@ -45,6 +45,7 @@ To keep this from becoming a dumping ground that duplicates installed skills:
 | [longevity.md](references/longevity.md) | Why Apple's soft-deprecation changes what to worry about, why an `NSViewRepresentable` wrapper is a temporary shape, third-party rot, toolchain drift, and containing fragile dependencies |
 | [subprocesses.md](references/subprocesses.md) | Shelling out: what the App Sandbox does and does not allow (measured), why `try` is not the error channel, and what adopting `Subprocess` costs |
 | [undo.md](references/undo.md) | `UndoManager` as a system responsibility, and why not to implement Memento by hand on macOS |
+| [distribution.md](references/distribution.md) | Shipping outside the Mac App Store: what the sandbox costs the updater, who owns the Sparkle bridge, and why the signing key is decided before the first release |
 
 ### Planned, not written yet
 
@@ -53,7 +54,6 @@ These files do not exist. Do not link to them, and do not cite them as if they h
 | Document | Will cover |
 |---|---|
 | `references/appkit-bridge.md` | Wrapping imperative AppKit views: state ownership, high-frequency events, observer lifecycle |
-| `references/distribution.md` | Packaging and distribution outside the Mac App Store |
 
 ## Quick Rules
 
@@ -102,6 +102,11 @@ These files do not exist. Do not link to them, and do not cite them as if they h
 19. **An `NSTextView` starts on TextKit 2 and drops to TextKit 1 the first time
     anything reads `.layoutManager`** — permanently, silently. Assert which one
     you are on. → [text editing](references/text-editing.md#1-know-which-textkit-you-are-on--it-is-not-a-given)
+20. **Distribution is decided before the first release, not after.** The
+    sandbox decision reaches the updater's entitlements, exactly one file
+    imports Sparkle and the App owns it — never a singleton — and the
+    `SUPublicEDKey` shipped in build 1 is the key every installed copy keeps
+    verifying against. → [distribution](references/distribution.md)
 
 ## Companion Skills
 

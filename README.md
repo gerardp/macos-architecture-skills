@@ -53,7 +53,7 @@ npx skills add https://github.com/Dimillian/Skills --skill macos-spm-app-packagi
 
 <pre>
 .agents/skills/macos-app-architecture/
-  <a href=".agents/skills/macos-app-architecture/SKILL.md">SKILL.md</a>                 Entry point. 19 quick rules, the index, and the companion-skill table.
+  <a href=".agents/skills/macos-app-architecture/SKILL.md">SKILL.md</a>                 Entry point. 20 quick rules, the index, and the companion-skill table.
   <a href=".agents/skills/macos-app-architecture/CHANGELOG.md">CHANGELOG.md</a>             Semver policy + what every rule change invalidated.
   references/
     <a href=".agents/skills/macos-app-architecture/references/architecture.md">architecture.md</a>        MV, bounded-context stores, Environment, Screens vs. Views, event enums.
@@ -74,12 +74,13 @@ npx skills add https://github.com/Dimillian/Skills --skill macos-spm-app-packagi
     <a href=".agents/skills/macos-app-architecture/references/swift-idioms.md">swift-idioms.md</a>        Only what write-swift does not cover.
     <a href=".agents/skills/macos-app-architecture/references/longevity.md">longevity.md</a>           Soft-deprecation, third-party rot, toolchain drift.
     <a href=".agents/skills/macos-app-architecture/references/subprocesses.md">subprocesses.md</a>        Shelling out: the App Sandbox (measured), exit status, Subprocess cost.
+    <a href=".agents/skills/macos-app-architecture/references/distribution.md">distribution.md</a>        Shipping outside the App Store: sandbox vs. updater, who owns Sparkle, the key.
 
 <a href="AGENTS.md">AGENTS.md</a>                  How to work on this repository. For tools that read AGENTS.md.
 <a href="CLAUDE.md">CLAUDE.md</a>                  Pointer so Claude Code auto-loads AGENTS.md.
 </pre>
 
-Two documents are planned and not written yet — `appkit-bridge.md` and `distribution.md`. The index lists them under *Planned, not written yet*, and nothing links to them.
+One document is planned and not written yet — `appkit-bridge.md`. The index lists it under *Planned, not written yet*, and nothing links to it.
 
 ## Keeping it current
 
