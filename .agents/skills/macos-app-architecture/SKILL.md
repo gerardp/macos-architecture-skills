@@ -3,7 +3,7 @@ name: macos-app-architecture
 description: Architecture and patterns for native macOS apps built with SwiftUI and AppKit—MV vs. MVVM, bounded-context stores, Environment, Screen/View naming, enum-based event grouping, communication between stores, bridging to imperative AppKit views, when to split the app into SwiftPM modules, running external processes under the App Sandbox, and the decisions behind distributing and auto-updating an app outside the Mac App Store. Use when designing a macOS app's structure, deciding where state belongs, creating a store or view, wrapping an NSView in SwiftUI, or planning distribution and Sparkle updates. Includes anti-patterns with examples of what not to do.
 license: MIT
 metadata:
-  version: 4.0.0
+  version: 4.0.1
 ---
 
 # macOS App Architecture (SwiftUI + AppKit)
@@ -123,6 +123,18 @@ duplicate their content here.
 | **axiom-macos** | Windows, menus and `CommandGroup`, sandboxing and security-scoped bookmarks, direct distribution, `NSViewRepresentable` mechanics | `npx skills add https://github.com/CharlesWiltgen/Axiom --skill axiom-macos` |
 | **instruments-profiling** | `xctrace` and Time Profiler from the command line, with no Xcode project required | `npx skills add https://github.com/steipete/agent-scripts --skill instruments-profiling` |
 | **macos-spm-app-packaging** | Assembling the `.app`, signing, notarising and the Sparkle appcast, from SwiftPM without an Xcode project | `npx skills add https://github.com/Dimillian/Skills --skill macos-spm-app-packaging` |
+
+Install all seven:
+
+```bash
+npx skills add https://github.com/emilkowalski/skills --skill write-swift
+npx skills add https://github.com/avdlee/swiftui-agent-skill --skill swiftui-expert-skill
+npx skills add https://github.com/avdlee/swift-concurrency-agent-skill --skill swift-concurrency
+npx skills add https://github.com/avdlee/swift-testing-agent-skill --skill swift-testing-expert
+npx skills add https://github.com/CharlesWiltgen/Axiom --skill axiom-macos
+npx skills add https://github.com/steipete/agent-scripts --skill instruments-profiling
+npx skills add https://github.com/Dimillian/Skills --skill macos-spm-app-packaging
+```
 
 For a text-editing app, add the relevant parts of `apple-text` — TextKit 2,
 fragment geometry, layout invalidation, `NSTextStorage`, AppKit vs. UIKit:
