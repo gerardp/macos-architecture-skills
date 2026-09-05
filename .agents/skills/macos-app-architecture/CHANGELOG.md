@@ -28,7 +28,7 @@ a stated consequence becomes silent drift by accident.
 Release procedure: bump `metadata.version` in `SKILL.md` and add the entry here **in the same commit
 as the rule change**, then tag `v<version>`.
 
-## 3.0.1 — 2026-09-05
+## 3.1.1 — 2026-09-05
 
 **PATCH: formatting. No rule changed, no companion skill added or removed.**
 
@@ -37,9 +37,10 @@ table in [SKILL.md](SKILL.md#companion-skills), so the whole set can be copied a
 go. The per-skill commands stay in the table's *Install* column; the block repeats them, it does
 not replace them. Same seven skills, same URLs.
 
-## 4.0.0 — 2026-09-02
+## 3.1.0 — 2026-09-02
 
-**MAJOR: a new Quick Rule and a new anti-pattern. Existing code can violate both.**
+**MINOR by number, but read it like a MAJOR: a new Quick Rule and a new anti-pattern, and
+existing configurations can violate both.**
 
 1. **Quick Rule 20 — distribution is decided before the first release.** New document:
    [distribution.md](references/distribution.md), which fills the `distribution.md` slot
