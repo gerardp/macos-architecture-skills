@@ -28,7 +28,7 @@ a stated consequence becomes silent drift by accident.
 Release procedure: bump `metadata.version` in `SKILL.md` and add the entry here **in the same commit
 as the rule change**, then tag `v<version>`.
 
-## 4.0.1 — 2026-09-05
+## 3.0.1 — 2026-09-05
 
 **PATCH: formatting. No rule changed, no companion skill added or removed.**
 
