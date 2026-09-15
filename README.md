@@ -40,13 +40,13 @@ table with what each one covers is in
 are **deliberately not installed** and why:
 
 ```bash
-npx skills add https://github.com/emilkowalski/skills --skill write-swift
-npx skills add https://github.com/avdlee/swiftui-agent-skill --skill swiftui-expert-skill
-npx skills add https://github.com/avdlee/swift-concurrency-agent-skill --skill swift-concurrency
-npx skills add https://github.com/avdlee/swift-testing-agent-skill --skill swift-testing-expert
-npx skills add https://github.com/CharlesWiltgen/Axiom --skill axiom-macos
-npx skills add https://github.com/steipete/agent-scripts --skill instruments-profiling
-npx skills add https://github.com/Dimillian/Skills --skill macos-spm-app-packaging
+npx skills@latest add https://github.com/emilkowalski/skills --skill write-swift
+npx skills@latest add https://github.com/avdlee/swiftui-agent-skill --skill swiftui-expert-skill
+npx skills@latest add https://github.com/avdlee/swift-concurrency-agent-skill --skill swift-concurrency
+npx skills@latest add https://github.com/avdlee/swift-testing-agent-skill --skill swift-testing-expert
+npx skills@latest add https://github.com/CharlesWiltgen/Axiom --skill axiom-macos
+npx skills@latest add https://github.com/steipete/agent-scripts --skill instruments-profiling
+npx skills@latest add https://github.com/Dimillian/Skills --skill macos-spm-app-packaging
 ```
 
 ## Layout

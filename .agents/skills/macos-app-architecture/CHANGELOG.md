@@ -28,6 +28,46 @@ a stated consequence becomes silent drift by accident.
 Release procedure: bump `metadata.version` in `SKILL.md` and add the entry here **in the same commit
 as the rule change**, then tag `v<version>`.
 
+## 3.2.0 — 2026-09-15
+
+**MINOR by number, but read it like a MAJOR: two *Right* examples changed, and code that
+followed either one no longer complies.**
+
+Prompted by `swiftui-expert-skill` 5.0.0. Its rules on closures had been contradicted here since
+its 4.2.0, with no entry in [overrides.md](references/overrides.md). They were measured before
+choosing between adopting and overriding them; the numbers are in
+[overrides.md](references/overrides.md#from-swiftui-expert-skill).
+
+1. **[No `Binding(get:set:)` where a key path will do](references/antipatterns.md#an-enum-for-all-view-state).**
+   The *Right* example of *An Enum for All View State* built its alert binding by hand.
+   **Measured**: a child handed `Binding(get:set:)` re-evaluated on **50 of 50** parent
+   updates, in Debug and Release; handed a key-path binding, **0**. *Comply*: move the
+   projection into the state type as a computed property with `get`/`set` and bind to it
+   (`$state.isShowingError`), or give the model a subscript (`$model[scoreFor: player]`).
+   Keep `Binding(get:set:)` for transforms no key path can express.
+
+2. **[The cross-feature route is a `NavigateAction`, not a closure](references/modularization.md#4-crossing-a-feature-boundary-on-macos).**
+   §4 of modularization.md, and its summary in antipatterns.md, injected
+   `@Entry var navigate: (AppRoute) -> Void`. **Measured**: with an unrelated environment
+   write in the subtree, the reader re-evaluated on **50 of 50** updates in a Debug build and
+   **once** in Release; the replacement cost **0** in both. *Comply*: put an `@Observable`
+   `Navigator` and a `NavigateAction` struct with `callAsFunction` in the routes leaf module;
+   the App layer owns the navigator and injects `NavigateAction(navigator)`. Feature call
+   sites do not change: `navigate(.note(id))` still compiles.
+
+Also in this release, invalidating nothing on their own:
+
+- **Measured and left alone**: an event closure passed to a view (Quick Rule 5's `onEvent`)
+  cost one evaluation, once. Quick Rule 5 stands.
+- [overrides.md](references/overrides.md): the derived-state override now cites
+  `performance-patterns.md:352-373` and `:375-385` (moved in 5.0.0, snippet unchanged) and adds
+  `view-structure.md:276`, which repeats the `@State` + `.onChange` cache. *Revision Status* is
+  re-read against 5.0.0. Its SDK 27 guidance (the `@State` macro, `@ContentBuilder`, `Document`,
+  attributed `TextEditor`) is execution layer and was **not verified**: no Xcode 27 toolchain
+  was available.
+- Companion install commands use `npx skills@latest`, as `swiftui-expert-skill`'s README now
+  does, with a note for copies installed before its move to the Agent Plugins layout.
+
 ## 3.1.1 — 2026-09-05
 
 **PATCH: formatting. No rule changed, no companion skill added or removed.**
