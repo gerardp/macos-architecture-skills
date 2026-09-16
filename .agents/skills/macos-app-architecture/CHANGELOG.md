@@ -28,6 +28,44 @@ a stated consequence becomes silent drift by accident.
 Release procedure: bump `metadata.version` in `SKILL.md` and add the entry here **in the same commit
 as the rule change**, then tag `v<version>`.
 
+## 3.3.0 — 2026-09-16
+
+**MINOR: nothing that passed review yesterday fails today.** The caching rule gets *wider*, not
+stricter — a second legitimate trigger is named, and the obligation added applies only inside a
+shape [antipatterns.md](references/antipatterns.md#storing-what-can-be-derived) already
+discouraged. A derived computed property stays the default and stays compliant.
+
+1. **[The trigger for caching a derivation is the dependency, not the cost](references/antipatterns.md#the-trigger-for-caching-is-the-dependency-not-the-cost).**
+   "Profile it with Instruments before caching" was the wrong instrument for the wrong question.
+   Measured at the raw `withObservationTracking` API: reading `currentUser` through a computed
+   property over `users` fires on an edit to an unrelated element; the same value cached in a
+   stored property and recomputed in `didSet` does not. A `first(where:)` over three elements is
+   free to run and still repaints every reader whenever any element changes. Derive by default;
+   cache when the *dependency* is wider than what the view reads, and measure that with
+   invalidation counts rather than a profiler.
+
+2. **[If you cache, every input carries the update](references/antipatterns.md#if-you-do-cache-every-input-carries-the-update).**
+   The failure mode is not either of the two usually predicted. Measured: assignments in `init`
+   do **not** skip `didSet` (the `@Observable` macro rewrites the stored property as a computed
+   one, so the `init` assignment goes through the setter), and an in-place element edit does
+   **not** skip it either. What does happen, silently and with no compiler help, is a new input
+   joining the derivation without its own `didSet`. A cache is a standing obligation, which is
+   the cost traded for the narrower dependency.
+
+Additional updates:
+
+- [overrides.md](references/overrides.md): the derived-state override now records that Apple's
+  `swiftui-specialist`, bundled with Xcode 27, makes the same recommendation as
+  `swiftui-expert-skill` in a better shape — on the model, updated from `didSet`, so the
+  `onChange(of:initial:)` defect does not apply to it. One of the override's two reasons is
+  retired; the position is unchanged, and the disagreement is now explicitly about the trigger,
+  not about whether caching works.
+- [SKILL.md](SKILL.md#deliberately-not-installed): the fifteen Xcode 27 bundled skills are
+  recorded as reviewed and not adopted, with the reason per skill and the note that their content
+  is Apple's, redistributed without a license — cite it, never copy it in.
+  `accessibility-voiceover-specialist` is named as the one exception worth installing on its own
+  merits.
+
 ## 3.2.0 — 2026-09-15
 
 1. **[Key-path bindings](references/antipatterns.md#an-enum-for-all-view-state).**

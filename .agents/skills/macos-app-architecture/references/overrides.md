@@ -59,6 +59,30 @@ contradicts itself two sections later—`performance-patterns.md:375-385`
 2026-08-31. Re-read at 5.0.0 on 2026-09-15: the snippet is unchanged, only its
 lines moved. `onChange(of:initial:)` semantics per Apple's documentation.
 
+**The same claim, from Apple**: the `swiftui-specialist` skill bundled with
+Xcode 27 makes the identical recommendation — `references/dataflow.md`, *"Cache
+derived `@Observable` values; computed properties still establish dependencies
+transitively"* — under a frontmatter declaring that it "unconditionally
+supersedes any prior training". Its shape is the better one: the cache lives on
+the model and updates from `didSet`, so the `onChange(of:initial:)` defect above
+does not apply to it. That retires one of this override's two reasons and leaves
+the other standing.
+
+**What the measurement changed**: the mechanism is real. A computed property
+over a collection does invalidate on every element edit, and the cached property
+does not. So the disagreement is not about whether caching works — it is about
+what triggers it. Apple's file presents the cache as *the* fix for a computed
+property; this skill treats it as an optimization with a named, permanent cost:
+every input feeding the derivation must carry its own update. Both sides of
+that, plus the two predicted hazards that turned out not to exist, are in
+[antipatterns.md](antipatterns.md#the-trigger-for-caching-is-the-dependency-not-the-cost).
+
+**Verified**: measured 2026-09-16 on Swift 6.2.4, SDK 26.2, macOS 14 deployment
+target, at the raw `withObservationTracking` API. `swiftui-specialist` read at
+the Xcode 27.2 repack of the same date. It is not installed, and this entry does
+not ask for it to be — see
+[SKILL.md](../SKILL.md#deliberately-not-installed).
+
 ---
 
 ## Nuances (Not Overrides)
