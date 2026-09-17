@@ -28,6 +28,39 @@ a stated consequence becomes silent drift by accident.
 Release procedure: bump `metadata.version` in `SKILL.md` and add the entry here **in the same commit
 as the rule change**, then tag `v<version>`.
 
+## 3.4.0 — 2026-09-17
+
+**MINOR: nothing that passed review yesterday fails today.** This release adds an override, a
+category the table lists as MAJOR, but the invalidation test governs: the override is *looser* than
+the companion rule it replaces. The one obligation it keeps applies only where
+`swiftui-expert-skill` already said AVOID.
+
+1. **[Passing a whole value struct to a view has a measured price](references/previews.md#1-narrow-inputs-not-full-models).**
+   The existing caveat stands: pass a dependency-free `Note` rather than one parameter per field.
+   It now states the cost. A row handed `note:` re-evaluates on every change to any field of that
+   note, including fields it never reads (50 of 50; a `title:` row, 0). The cost is bounded to the
+   row whose element changed: a `ForEach` of 10 cost 50 evaluations, not 500. Keep passing the
+   struct by default; break it apart when the element changes at a high rate, such as a model the
+   editor writes on every keystroke. `swiftui-expert-skill` 5.0.0 says to pass only the fields a
+   view reads in every case; the disagreement over the threshold is recorded as
+   [an override](references/overrides.md#passing-a-whole-value-struct-to-a-view).
+
+2. **[Computed properties and `@ViewBuilder` helpers give SwiftUI nothing to skip](references/antipatterns.md#important-nuance-derive-data-not-views).**
+   "A separate `struct View` may skip the redraw" was stated, not measured. With the parent
+   re-evaluated 50 times for a reason the section does not read, a computed property ran 50 times,
+   a `@ViewBuilder` function 50, and a `View` struct 0.
+
+3. **[Stable `@Entry` defaults: adopted, with the fix narrowed](references/overrides.md#from-swiftui-expert-skill).**
+   `@Entry` expands its default into a computed getter, so `@Entry var model = Model()` allocates
+   on every fallback read. The `static let` fix `swiftui-expert-skill` offers does not compile in
+   Swift 6 language mode for a `@MainActor` model with an explicit `init`, nor for a non-`Sendable`
+   class; it compiles only under `MainActor` default isolation. Nothing in this skill hits it,
+   because `@Observable` stores go through `.environment(store)`. If a reference type does end up
+   in `@Entry`, give it a `nil` default.
+
+Measured on macOS 15.8, Xcode 26.3 (SDK 26.2), Swift 6.2.4, deployment target macOS 14, identical
+in Release and Debug. The `@Entry` results are compile checks in Swift 6 language mode.
+
 ## 3.3.0 — 2026-09-16
 
 **MINOR: nothing that passed review yesterday fails today.** The caching rule gets *wider*, not

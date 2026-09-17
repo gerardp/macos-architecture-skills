@@ -407,8 +407,14 @@ concrete things:
 1. **You can’t preview** that UI piece separately.
 2. **You can’t reuse** it in another screen; you’d have to copy‑paste.
 3. **It hinders the diffing engine**: a property has no identity of its own, so
-   it is re-evaluated with its parent. A separate `struct View` may skip the
-   redraw when its inputs have not changed.
+   it is re-evaluated with its parent. A separate `struct View` is skipped when
+   its inputs have not changed. **Measured**, with the parent re-evaluated 50
+   times for a reason the section does not read: a computed property ran
+   **50** times, a `@ViewBuilder` function **50**, a `View` struct **0**.
+   Identical in Release and Debug, and at N = 20; macOS 15.8, Xcode 26.3
+   (SDK 26.2), Swift 6.2.4, deployment target macOS 14, 2026-09-17. The struct
+   is skipped only if its inputs compare equal, which is why
+   [what you pass it](previews.md#1-narrow-inputs-not-full-models) matters.
 
 If a piece of `body` deserves a name, it deserves to be a `View`. See
 [view-composition.md](view-composition.md).
